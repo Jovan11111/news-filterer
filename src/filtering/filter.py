@@ -7,6 +7,11 @@ from src.utils.enums.filter_mode import FilterMode
 class Filter(ABC):
     """Strategy interface shared by all news filters."""
 
+    @property
+    @abstractmethod
+    def name(self) -> str:
+        """A short, unique identifier used in reports and figure file names."""
+
     @abstractmethod
     def select(
         self, articles: list[SampledNews], mode: FilterMode

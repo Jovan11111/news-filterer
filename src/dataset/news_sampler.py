@@ -54,7 +54,9 @@ class NewsSampler:
         conn = sqlite3.connect(str(self.__db_path))
         conn.row_factory = sqlite3.Row
         try:
-            cur = conn.execute(f"SELECT {SAMPLED_NEWS_COLUMNS} FROM news")
+            present = self.__present_optional_columns(conn)
+            columns = SAMPLED_NEWS_COLUMNS + "".join(f", {column}" for column in present)
+            cur = conn.execute(f"SELECT {columns} FROM news")
             return [
                 SampledNews(
                     id=row["id"],
@@ -65,11 +67,21 @@ class NewsSampler:
                     news_date=date.fromisoformat(row["news_date"]),
                     price_change_1_day=row["price_change_1_day"],
                     price_change_7_days=row["price_change_7_days"],
+                    market_change_1_day=row["market_change_1_day"] if "market_change_1_day" in present else None,
+                    market_change_7_days=row["market_change_7_days"] if "market_change_7_days" in present else None,
+                    volatility_30_day=row["volatility_30_day"] if "volatility_30_day" in present else None,
                 )
                 for row in cur
             ]
         finally:
             conn.close()
+
+    @staticmethod
+    def __present_optional_columns(conn: sqlite3.Connection) -> set[str]:
+        """Return which of the optional (later-added) columns the table carries."""
+        optional = {"market_change_1_day", "market_change_7_days", "volatility_30_day"}
+        names = {row["name"] for row in conn.execute("PRAGMA table_info(news)")}
+        return optional & names
 
     def sample(self) -> list[SampledNews]:
         """Sample the news randomly based on given criteria

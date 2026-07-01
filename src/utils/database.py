@@ -1,22 +1,29 @@
 import sqlite3
 from collections.abc import Iterable
+from datetime import date
 from pathlib import Path
 
 from src.models.news_record import NewsRecord
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS news (
-    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
-    news_id             TEXT,
-    news_title          TEXT NOT NULL,
-    news_description    TEXT,
-    ticker              TEXT NOT NULL,
-    news_date           TEXT NOT NULL,
-    price_change_1_day  REAL,
-    price_change_7_days REAL,
+    id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+    news_id              TEXT,
+    news_title           TEXT NOT NULL,
+    news_description     TEXT,
+    ticker               TEXT NOT NULL,
+    news_date            TEXT NOT NULL,
+    price_change_1_day   REAL,
+    price_change_7_days  REAL,
+    market_change_1_day  REAL,
+    market_change_7_days REAL,
+    volatility_30_day    REAL,
     UNIQUE (ticker, news_date)
 );
 """
+
+# Columns added after the original schema; older databases are migrated lazily.
+_ADDED_COLUMNS = ("market_change_1_day", "market_change_7_days", "volatility_30_day")
 
 
 class NewsDatabase:
@@ -31,7 +38,15 @@ class NewsDatabase:
 
     def __create_schema(self):
         self.__conn.executescript(_SCHEMA)
+        self.__migrate()
         self.__conn.commit()
+
+    def __migrate(self):
+        """Add columns introduced after the original schema to older databases."""
+        existing = {row["name"] for row in self.__conn.execute("PRAGMA table_info(news)")}
+        for column in _ADDED_COLUMNS:
+            if column not in existing:
+                self.__conn.execute(f"ALTER TABLE news ADD COLUMN {column} REAL")
 
     def upsert_many(self, records: Iterable[NewsRecord]) -> int:
         """Insert many records, replacing any existing row for the same ticker/day.
@@ -51,6 +66,9 @@ class NewsDatabase:
                 r.news_date.isoformat(),
                 r.price_change_1_day,
                 r.price_change_7_days,
+                r.market_change_1_day,
+                r.market_change_7_days,
+                r.volatility_30_day,
             )
             for r in records
         ]
@@ -60,19 +78,47 @@ class NewsDatabase:
             """
             INSERT INTO news (
                 news_id, news_title, news_description, ticker, news_date,
-                price_change_1_day, price_change_7_days
-            ) VALUES (?, ?, ?, ?, ?, ?, ?)
+                price_change_1_day, price_change_7_days,
+                market_change_1_day, market_change_7_days, volatility_30_day
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT (ticker, news_date) DO UPDATE SET
-                news_id             = excluded.news_id,
-                news_title          = excluded.news_title,
-                news_description    = excluded.news_description,
-                price_change_1_day  = excluded.price_change_1_day,
-                price_change_7_days = excluded.price_change_7_days
+                news_id              = excluded.news_id,
+                news_title           = excluded.news_title,
+                news_description     = excluded.news_description,
+                price_change_1_day   = excluded.price_change_1_day,
+                price_change_7_days  = excluded.price_change_7_days,
+                market_change_1_day  = excluded.market_change_1_day,
+                market_change_7_days = excluded.market_change_7_days,
+                volatility_30_day    = excluded.volatility_30_day
             """,
             rows,
         )
         self.__conn.commit()
         return len(rows)
+
+    def distinct_news_dates(self) -> list[date]:
+        """Return every distinct news date in the table, ascending."""
+        cursor = self.__conn.execute("SELECT DISTINCT news_date FROM news ORDER BY news_date")
+        return [date.fromisoformat(row["news_date"]) for row in cursor]
+
+    def update_market_changes(self, changes_by_date: dict[date, tuple[float | None, float | None]]) -> int:
+        """Set the 1-/7-day market change for every row on each given news date.
+
+        Args:
+            changes_by_date (dict): Maps a news date to its (1-day, 7-day) market change.
+
+        Returns:
+            int: The number of rows updated.
+        """
+        updated = 0
+        for news_date, (change_1_day, change_7_days) in changes_by_date.items():
+            cursor = self.__conn.execute(
+                "UPDATE news SET market_change_1_day = ?, market_change_7_days = ? WHERE news_date = ?",
+                (change_1_day, change_7_days, news_date.isoformat()),
+            )
+            updated += cursor.rowcount
+        self.__conn.commit()
+        return updated
 
     def close(self):
         """Close the underlying SQLite connection."""

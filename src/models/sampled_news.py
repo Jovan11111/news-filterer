@@ -14,6 +14,9 @@ class SampledNews:
         news_date: date,
         price_change_1_day: float | None,
         price_change_7_days: float | None,
+        market_change_1_day: float | None = None,
+        market_change_7_days: float | None = None,
+        volatility_30_day: float | None = None,
     ):
         self.__id = id
         self.__news_id = news_id
@@ -23,6 +26,9 @@ class SampledNews:
         self.__news_date = news_date
         self.__price_change_1_day = price_change_1_day
         self.__price_change_7_days = price_change_7_days
+        self.__market_change_1_day = market_change_1_day
+        self.__market_change_7_days = market_change_7_days
+        self.__volatility_30_day = volatility_30_day
 
     @property
     def id(self) -> int:
@@ -55,3 +61,15 @@ class SampledNews:
     @property
     def price_change_7_days(self) -> float | None:
         return self.__price_change_7_days
+
+    @property
+    def market_change_1_day(self) -> float | None:
+        return self.__market_change_1_day
+
+    @property
+    def market_change_7_days(self) -> float | None:
+        return self.__market_change_7_days
+
+    @property
+    def volatility_30_day(self) -> float | None:
+        return self.__volatility_30_day

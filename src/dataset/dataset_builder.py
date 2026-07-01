@@ -1,6 +1,7 @@
 from datetime import date
 from pathlib import Path
 
+from src.dataset.constants import MARKET_INDEX_SYMBOL
 from src.dataset.finnhub_news_fetcher import FinnhubNewsFetcher
 from src.dataset.price_fetcher import PriceFetcher
 from src.models.news_record import NewsRecord
@@ -48,6 +49,7 @@ class DatasetBuilder:
         )
         db = NewsDatabase(self.db_path)
         try:
+            self.__price_fetcher.load_history(MARKET_INDEX_SYMBOL, self.__start, self.__end)
             for idx, ticker in enumerate(self.__tickers, start=1):
                 self.__process_ticker(db, ticker, idx)
         finally:
@@ -66,10 +68,15 @@ class DatasetBuilder:
             return
 
         self.__price_fetcher.load_history(ticker, self.__start, self.__end)
+        if not self.__price_fetcher.has_history(ticker):
+            logger.warning(f"No price history for {ticker}; skipping its {len(per_day)} news rows.")
+            return
 
         records: list[NewsRecord] = []
         for news_date, item in sorted(per_day.items()):
             price = self.__price_fetcher.price(ticker, news_date)
+            market = self.__price_fetcher.price(MARKET_INDEX_SYMBOL, news_date)
+            volatility = self.__price_fetcher.volatility(ticker, news_date)
             records.append(
                 NewsRecord(
                     news_id=item.news_id,
@@ -79,6 +86,9 @@ class DatasetBuilder:
                     news_date=news_date,
                     price_change_1_day=price.change_1_day,
                     price_change_7_days=price.change_7_days,
+                    market_change_1_day=market.change_1_day,
+                    market_change_7_days=market.change_7_days,
+                    volatility_30_day=volatility,
                 )
             )
 
