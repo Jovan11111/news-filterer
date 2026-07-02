@@ -4,6 +4,15 @@ import re
 
 from dotenv import load_dotenv
 
+from src.constants.filtering import (
+    LLM_DESCRIPTION_CHARS,
+    LLM_MODE_INSTRUCTIONS,
+    LLM_PREMIUM_KEY_ENV,
+    LLM_PREMIUM_MODEL,
+    LLM_STANDARD_KEY_ENV,
+    LLM_STANDARD_MODEL,
+    LLM_TEMPERATURE,
+)
 from src.filtering.filter import Filter
 from src.models.sampled_news import SampledNews
 from src.utils.enums.filter_mode import FilterMode
@@ -18,13 +27,13 @@ class LlmFilter(Filter):
     The model is prompted with a numbered list of headlines and the active mode,
     and asked to return the item numbers of its top picks. Two axes configure it:
 
-    - ``is_premium`` switches between a cheaper standard model (using the
-      ``AI_API_KEY`` environment variable) and a stronger premium model (using
-      ``PREMIUM_AI_API_KEY``).
-    - ``is_tournament`` switches between scoring the whole batch in one prompt and
-      a hierarchical tournament: the batch is split into groups of ``group_size``,
-      the model picks the best ``top_k`` of each group, and the survivors are
-      reduced again until ``top_k`` remain. This is the only feasible way to rank
+    - is_premium switches between a cheaper standard model (using the
+      AI_API_KEY environment variable) and a stronger premium model (using
+      PREMIUM_AI_API_KEY).
+    - is_tournament switches between scoring the whole batch in one prompt and
+      a hierarchical tournament: the batch is split into groups of group_size,
+      the model picks the best top_k of each group, and the survivors are
+      reduced again until top_k remain. This is the only feasible way to rank
       very large batches that cannot fit in a single prompt, and—unlike the
       scalar sentiment filters—it can change the result because the model ranks
       headlines relative to the others in the same prompt.
@@ -33,19 +42,6 @@ class LlmFilter(Filter):
     requires an API key; only an actual selection does. The filter never looks at
     price data, so it predicts from text alone.
     """
-
-    __STANDARD_MODEL = "gpt-4o-mini"
-    __PREMIUM_MODEL = "gpt-4o"
-    __STANDARD_KEY_ENV = "AI_API_KEY"
-    __PREMIUM_KEY_ENV = "PREMIUM_AI_API_KEY"
-
-    __DESCRIPTION_CHARS = 200
-
-    __INSTRUCTIONS = {
-        FilterMode.BUY: "rise the most (strongest positive price reaction)",
-        FilterMode.SELL: "fall the most (strongest negative price reaction)",
-        FilterMode.AFFECT: "move the most in either direction (largest absolute price reaction)",
-    }
 
     def __init__(
         self,
@@ -78,8 +74,8 @@ class LlmFilter(Filter):
         self.__is_tournament = is_tournament
         self.__group_size = group_size
         self.__seed = seed
-        self.__model = model or (self.__PREMIUM_MODEL if is_premium else self.__STANDARD_MODEL)
-        self.__key_env = self.__PREMIUM_KEY_ENV if is_premium else self.__STANDARD_KEY_ENV
+        self.__model = model or (LLM_PREMIUM_MODEL if is_premium else LLM_STANDARD_MODEL)
+        self.__key_env = LLM_PREMIUM_KEY_ENV if is_premium else LLM_STANDARD_KEY_ENV
         self.__client = client
 
     @property
@@ -167,11 +163,11 @@ class LlmFilter(Filter):
         )
         lines = []
         for index, article in enumerate(articles, start=1):
-            description = (article.news_description or "")[:self.__DESCRIPTION_CHARS]
+            description = (article.news_description or "")[:LLM_DESCRIPTION_CHARS]
             lines.append(f"{index}. [{article.ticker}] {article.news_title} - {description}".strip())
         body = "\n".join(lines)
         user = (
-            f"Select the {self.__top_k} headlines whose stock is most likely to {self.__INSTRUCTIONS[mode]}.\n\n"
+            f"Select the {self.__top_k} headlines whose stock is most likely to {LLM_MODE_INSTRUCTIONS[mode]}.\n\n"
             f"Headlines:\n{body}\n\n"
             f"Return a JSON array of exactly {self.__top_k} item numbers between 1 and {len(articles)}, best first."
         )
@@ -180,7 +176,7 @@ class LlmFilter(Filter):
     def __complete(self, messages: list[dict]) -> str:
         """Send the chat messages to the model and return its raw text reply."""
         client = self.__get_client()
-        response = client.chat.completions.create(model=self.__model, messages=messages, temperature=0, seed=self.__seed)
+        response = client.chat.completions.create(model=self.__model, messages=messages, temperature=LLM_TEMPERATURE, seed=self.__seed)
         return response.choices[0].message.content or ""
 
     def __get_client(self):
@@ -223,7 +219,7 @@ class LlmFilter(Filter):
         return [number - 1 for number in numbers]
 
     def __gather(self, articles: list[SampledNews], indices: list[int]) -> list[SampledNews]:
-        """Map parsed indices to articles, deduping and topping up to ``top_k``."""
+        """Map parsed indices to articles, deduping and topping up to top_k."""
         chosen: list[SampledNews] = []
         seen: set[int] = set()
         for index in indices:

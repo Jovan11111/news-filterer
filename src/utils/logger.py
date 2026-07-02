@@ -12,7 +12,7 @@ def get_logger(
     handlers (which would otherwise print every message multiple times).
 
     Args:
-        name (str): The logger name, usually the module's ``__name__``.
+        name (str): The logger name, usually the module's __name__.
         level (int): The logging level to apply.
 
     Returns:

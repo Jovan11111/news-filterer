@@ -3,7 +3,7 @@ import sqlite3
 from datetime import date
 from pathlib import Path
 
-from src.dataset.constants import SAMPLED_NEWS_COLUMNS
+from src.constants.dataset import OPTIONAL_COLUMNS, SAMPLED_NEWS_COLUMNS
 from src.models.sampled_news import SampledNews
 from src.utils.logger import get_logger
 
@@ -91,9 +91,8 @@ class NewsSampler:
     @staticmethod
     def __present_optional_columns(conn: sqlite3.Connection) -> set[str]:
         """Return which of the optional (later-added) columns the table carries."""
-        optional = {"market_change_1_day", "market_change_7_days", "volatility_30_day"}
         names = {row["name"] for row in conn.execute("PRAGMA table_info(news)")}
-        return optional & names
+        return set(OPTIONAL_COLUMNS) & names
 
     def sample(self) -> list[SampledNews]:
         """Draw a random batch of news rows subject to the per-ticker time gap.

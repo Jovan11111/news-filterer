@@ -3,12 +3,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from datetime import date  # noqa: E402
+from datetime import date
 
-from src.dataset.constants import MARKET_INDEX_SYMBOL  # noqa: E402
-from src.dataset.price_fetcher import PriceFetcher  # noqa: E402
-from src.utils.news_database import NewsDatabase  # noqa: E402
-from src.utils.logger import get_logger  # noqa: E402
+from src.constants.dataset import MARKET_INDEX_SYMBOL
+from src.dataset.price_fetcher import PriceFetcher
+from src.utils.news_database import NewsDatabase
+from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 

@@ -4,7 +4,7 @@ from src.models.evaluation_result import EvaluationResult
 class FilterRun:
     """One filter evaluation at a requested batch size for the scalability report.
 
-    ``requested_size`` is what we asked the sampler for; ``evaluation`` carries
+    requested_size is what we asked the sampler for; evaluation carries
     the actual sample size, the per-mode/horizon scores and the filter timing.
     """
 

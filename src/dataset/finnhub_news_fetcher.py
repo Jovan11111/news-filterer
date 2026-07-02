@@ -3,7 +3,7 @@ from datetime import date, datetime, timedelta, timezone
 
 import requests
 
-from src.dataset.constants import BASE_URL, SYMBOL_ALIASES
+from src.constants.dataset import FINNHUB_NEWS_URL, SYMBOL_ALIASES
 from src.models.news_item import NewsItem
 from src.utils.clean_text import clean_text
 from src.utils.config_provider import ConfigProvider
@@ -79,7 +79,7 @@ class FinnhubNewsFetcher:
         for attempt in range(1, self.__config.finnhub_max_retries + 1):
             self.__throttle()
             try:
-                resp = self.__session.get(BASE_URL, params=params, timeout=self.__config.finnhub_timeout)
+                resp = self.__session.get(FINNHUB_NEWS_URL, params=params, timeout=self.__config.finnhub_timeout)
             except requests.RequestException as e:
                 logger.warning(
                     f"Finnhub request error for {ticker} (try {attempt}): {e}"

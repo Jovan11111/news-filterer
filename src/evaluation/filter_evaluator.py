@@ -50,7 +50,7 @@ class FilterEvaluator:
         return self.__scorer.standardize
 
     def evaluate(self, news_filter: Filter, articles: Sequence[SampledNews]) -> EvaluationResult:
-        """Evaluate ``news_filter`` on ``articles`` across all modes and horizons.
+        """Evaluate news_filter on articles across all modes and horizons.
 
         Args:
             news_filter (Filter): The filter to run and score.

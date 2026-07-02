@@ -1,5 +1,6 @@
 from transformers import pipeline
 
+from src.constants.filtering import FINBERT_INFERENCE_BATCH_SIZE, FINBERT_MODEL_NAME
 from src.filtering.filter import Filter
 from src.models.sampled_news import SampledNews
 from src.utils.enums.filter_mode import FilterMode
@@ -11,27 +12,24 @@ logger = get_logger(__name__)
 class FinbertFilter(Filter):
     """Ranks headlines with FinBERT, a BERT model fine-tuned on financial text.
 
-    FinBERT classifies each headline into ``positive`` / ``negative`` / ``neutral``
+    FinBERT classifies each headline into positive / negative / neutral
     with a probability for each. Those are collapsed into one directional signal:
 
         signal = P(positive) - P(negative)   in [-1, 1]
 
     which the three modes read like the other sentiment filters:
 
-    - ``BUY`` prefers the most positive sentiment (expected to rise).
-    - ``SELL`` prefers the most negative sentiment (expected to fall).
-    - ``AFFECT`` prefers the largest magnitude either way (expected to move most).
+    - BUY prefers the most positive sentiment (expected to rise).
+    - SELL prefers the most negative sentiment (expected to fall).
+    - AFFECT prefers the largest magnitude either way (expected to move most).
 
     The evaluator asks the filter once per mode on the same batch, so the model
-    would otherwise score every article three times. With ``is_cached=True`` the
+    would otherwise score every article three times. With is_cached=True the
     per-article signals are computed once and reused across modes, cutting CPU
     inference roughly threefold. The flag is kept switchable (and reflected in
     :attr:`name`) so the cached and uncached variants can be benchmarked side by
     side. The filter never looks at price data, so it predicts from text alone.
     """
-
-    __MODEL_NAME = "ProsusAI/finbert"
-    __INFERENCE_BATCH_SIZE = 32
 
     # The FinBERT pipeline (~440 MB) is loaded once and shared across every
     # instance (one per batch-size run) instead of being reloaded each time.
@@ -53,8 +51,8 @@ class FinbertFilter(Filter):
     def __load_pipeline(cls):
         """Load and cache the shared FinBERT pipeline, downloading it on first use."""
         if cls.__shared_pipeline is None:
-            logger.info(f"Loading FinBERT model '{cls.__MODEL_NAME}' (downloads on first run).")
-            cls.__shared_pipeline = pipeline("text-classification", model=cls.__MODEL_NAME, top_k=None, truncation=True)
+            logger.info(f"Loading FinBERT model '{FINBERT_MODEL_NAME}' (downloads on first run).")
+            cls.__shared_pipeline = pipeline("text-classification", model=FINBERT_MODEL_NAME, top_k=None, truncation=True)
         return cls.__shared_pipeline
 
     @property
@@ -88,7 +86,7 @@ class FinbertFilter(Filter):
         if not articles:
             return []
         texts = [self.__text(article) for article in articles]
-        results = self.__pipeline(texts, truncation=True, batch_size=self.__INFERENCE_BATCH_SIZE)
+        results = self.__pipeline(texts, truncation=True, batch_size=FINBERT_INFERENCE_BATCH_SIZE)
         return [self.__compound(scores) for scores in results]
 
     def __signals(self, articles: list[SampledNews]) -> list[float]:
@@ -101,7 +99,7 @@ class FinbertFilter(Filter):
         return [self.__cache[article.news_id] for article in articles]
 
     def signal(self, article: SampledNews) -> float:
-        """Return FinBERT's directional sentiment for one article in ``[-1, 1]``.
+        """Return FinBERT's directional sentiment for one article in [-1, 1].
 
         Args:
             article (SampledNews): The article whose title and description are scored.

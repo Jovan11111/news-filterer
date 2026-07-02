@@ -8,8 +8,8 @@ from src.utils.enums.filter_mode import FilterMode
 class VaderSentimentFilter(Filter):
     """Ranks headlines by VADER's compound sentiment score.
 
-    VADER is a lexicon-and-rules sentiment model that returns a ``compound``
-    score in ``[-1, +1]`` for a piece of text, accounting for intensifiers,
+    VADER is a lexicon-and-rules sentiment model that returns a compound
+    score in [-1, +1] for a piece of text, accounting for intensifiers,
     negations, punctuation and capitalisation. It is the natural step up from the
     keyword-counting rule-based filter while still needing no API key, no model
     download and staying fully deterministic.
@@ -17,9 +17,9 @@ class VaderSentimentFilter(Filter):
     The single compound signal is read per mode, exactly like the rule-based
     filter:
 
-    - ``BUY`` prefers the most positive sentiment (expected to rise).
-    - ``SELL`` prefers the most negative sentiment (expected to fall).
-    - ``AFFECT`` prefers the largest magnitude either way (expected to move most).
+    - BUY prefers the most positive sentiment (expected to rise).
+    - SELL prefers the most negative sentiment (expected to fall).
+    - AFFECT prefers the largest magnitude either way (expected to move most).
 
     The filter never looks at price data, so it predicts from text alone.
     """
@@ -44,7 +44,7 @@ class VaderSentimentFilter(Filter):
         return self.__top_k
 
     def signal(self, article: SampledNews) -> float:
-        """Return VADER's compound sentiment score for one article in ``[-1, 1]``.
+        """Return VADER's compound sentiment score for one article in [-1, 1].
 
         Args:
             article (SampledNews): The article whose title and description are scored.

@@ -18,7 +18,7 @@ class Filter(ABC):
     ) -> list[SampledNews]:
         """Return the subset of articles selected for the given mode.
 
-        Implementations must not mutate ``articles`` and must return only
+        Implementations must not mutate articles and must return only
         elements drawn from the input batch.
 
         Args:

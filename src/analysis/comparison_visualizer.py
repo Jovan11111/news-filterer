@@ -1,15 +1,20 @@
 from pathlib import Path
 
-import matplotlib
+import matplotlib.pyplot as plt
 
-matplotlib.use("Agg")
+from src.constants.visualization import (
+    COMPARISON_BAR_WIDTH,
+    COMPARISON_SERIES,
+    COMPARISON_SERIES_COLORS,
+    COMPARISON_SERIES_LABELS,
+    FIGURE_DPI,
+)
+from src.models.evaluation_result import EvaluationResult
+from src.utils.enums.filter_mode import FilterMode
+from src.utils.enums.price_horizon import PriceHorizon
+from src.utils.logger import get_logger
 
-import matplotlib.pyplot as plt  # noqa: E402
-
-from src.models.evaluation_result import EvaluationResult  # noqa: E402
-from src.utils.enums.filter_mode import FilterMode  # noqa: E402
-from src.utils.enums.price_horizon import PriceHorizon  # noqa: E402
-from src.utils.logger import get_logger  # noqa: E402
+plt.switch_backend("Agg")
 
 logger = get_logger(__name__)
 
@@ -22,11 +27,6 @@ class ComparisonVisualizer:
     distance from filter to ideal and its lift over the random floor are visible
     at a glance.
     """
-
-    __SERIES = ("worst_value", "average_value", "filter_value", "ideal_value")
-    __SERIES_LABELS = ("worst", "average", "filter", "ideal")
-    __SERIES_COLORS = ("#c0392b", "#7f8c8d", "#2980b9", "#27ae60")
-    __BAR_WIDTH = 0.2
 
     def __init__(self, output_dir: Path):
         """Create the visualizer with the directory figures are written to.
@@ -42,7 +42,7 @@ class ComparisonVisualizer:
         return self.__output_dir
 
     def render(self, result: EvaluationResult, tag: str) -> Path:
-        """Render ``result`` to a PNG named after the filter and ``tag``.
+        """Render result to a PNG named after the filter and tag.
 
         Args:
             result (EvaluationResult): The evaluation to visualize.
@@ -56,7 +56,7 @@ class ComparisonVisualizer:
 
         self.__output_dir.mkdir(parents=True, exist_ok=True)
         path = self.__output_dir.joinpath(f"{result.filter_name}_{tag}.png")
-        figure.savefig(path, dpi=150)
+        figure.savefig(path, dpi=FIGURE_DPI)
         plt.close(figure)
         logger.info(f"Wrote comparison figure to {path}.")
         return path
@@ -86,11 +86,11 @@ class ComparisonVisualizer:
     def __draw_panel(self, axis, result: EvaluationResult, modes: list[FilterMode], horizon: PriceHorizon):
         """Draw the worst/average/filter/ideal bars for every mode on one horizon panel."""
         positions = list(range(len(modes)))
-        offsets = [(index - (len(self.__SERIES) - 1) / 2) * self.__BAR_WIDTH for index in range(len(self.__SERIES))]
+        offsets = [(index - (len(COMPARISON_SERIES) - 1) / 2) * COMPARISON_BAR_WIDTH for index in range(len(COMPARISON_SERIES))]
 
-        for series, label, color, offset in zip(self.__SERIES, self.__SERIES_LABELS, self.__SERIES_COLORS, offsets):
+        for series, label, color, offset in zip(COMPARISON_SERIES, COMPARISON_SERIES_LABELS, COMPARISON_SERIES_COLORS, offsets):
             heights = [self.__value(result.score(mode, horizon), series) for mode in modes]
-            axis.bar([position + offset for position in positions], heights, self.__BAR_WIDTH, label=label, color=color)
+            axis.bar([position + offset for position in positions], heights, COMPARISON_BAR_WIDTH, label=label, color=color)
 
         axis.set_title(f"{horizon.value} horizon")
         axis.set_xticks(positions)

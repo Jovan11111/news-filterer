@@ -25,7 +25,7 @@ def make_article(article_id: int, title: str, description: str | None = "") -> S
 class StubClient:
     """A fake OpenAI-style client that returns a canned reply without any network.
 
-    ``content`` may be a string or a callable receiving the create() kwargs, so a
+    content may be a string or a callable receiving the create() kwargs, so a
     test can inspect the prompt (e.g. the number of headlines) and respond.
     """
 

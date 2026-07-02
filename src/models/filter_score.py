@@ -5,9 +5,9 @@ from src.utils.enums.price_horizon import PriceHorizon
 class FilterScore:
     """How a filter's selection compares to the baseline for one mode/horizon.
 
-    Values are in the mode's oriented space (higher is better). ``gap_to_ideal``
-    is how much the filter falls short of the perfect pick, ``lift_over_average``
-    is how far it beats the random floor, and ``normalized_score`` places the
+    Values are in the mode's oriented space (higher is better). gap_to_ideal
+    is how much the filter falls short of the perfect pick, lift_over_average
+    is how far it beats the random floor, and normalized_score places the
     filter on a 0..1 scale where 0 means "no better than random" and 1 means
     "as good as the ideal selection".
     """

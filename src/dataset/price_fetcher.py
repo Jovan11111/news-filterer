@@ -3,8 +3,9 @@ from statistics import stdev
 
 import yfinance as yf
 
-from src.dataset.constants import (
+from src.constants.dataset import (
     ESTIMATION_BUFFER_DAYS,
+    FORWARD_BUFFER_DAYS,
     MIN_VOLATILITY_RETURNS,
     SYMBOL_ALIASES,
     VOLATILITY_WINDOW_DAYS,
@@ -40,7 +41,7 @@ class PriceFetcher:
             end (date): Last day of news coverage.
         """
         buf_start = start - timedelta(days=ESTIMATION_BUFFER_DAYS)
-        buf_end = end + timedelta(days=14)
+        buf_end = end + timedelta(days=FORWARD_BUFFER_DAYS)
         try:
             hist = yf.Ticker(self.__yahoo_symbol(ticker)).history(
                 start=buf_start.isoformat(),
@@ -109,8 +110,8 @@ class PriceFetcher:
         """Trailing daily-return volatility (%) of a ticker as of a news date.
 
         The standard deviation of the stock's daily simple returns over the last
-        ``window`` trading days strictly *before* ``news_date`` (so the news-day
-        move itself never leaks into the estimate). Returns ``None`` when too
+        window trading days strictly *before* news_date (so the news-day
+        move itself never leaks into the estimate). Returns None when too
         little history is available to be reliable.
 
         Args:
@@ -119,7 +120,7 @@ class PriceFetcher:
             window (int): Number of trailing trading days to include.
 
         Returns:
-            float | None: The daily-return standard deviation in percent, or ``None``.
+            float | None: The daily-return standard deviation in percent, or None.
         """
         closes = self.__prices.get(ticker)
         if not closes:

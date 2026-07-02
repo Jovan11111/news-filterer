@@ -1,6 +1,7 @@
 from collections.abc import Sequence
 from math import sqrt
 
+from src.constants.evaluation import HORIZON_TRADING_DAYS
 from src.models.sampled_news import SampledNews
 from src.utils.enums.filter_mode import FilterMode
 from src.utils.enums.price_horizon import PriceHorizon
@@ -12,26 +13,21 @@ class NewsScorer:
     The three filter modes are unified into a single "higher is better" value so
     that baselines and evaluation share one comparison axis:
 
-    - ``BUY`` keeps the signed change (a bigger gain is better).
-    - ``SELL`` negates the change (a bigger drop is better).
-    - ``AFFECT`` takes the absolute change (a bigger move either way is better).
+    - BUY keeps the signed change (a bigger gain is better).
+    - SELL negates the change (a bigger drop is better).
+    - AFFECT takes the absolute change (a bigger move either way is better).
 
-    When ``subtract_market`` is set the broad-market (S&P 500) change over the
+    When subtract_market is set the broad-market (S&P 500) change over the
     same horizon is subtracted first, so the value reflects the news-driven
     (abnormal) move rather than the whole market's drift. Articles missing the
     market change fall back to their raw price change.
 
-    When ``standardize`` is set the (market-adjusted) move is divided by the
+    When standardize is set the (market-adjusted) move is divided by the
     stock's own trailing volatility scaled to the horizon, expressing it in
     standard deviations (a z-score). This normalizes for the fact that some
     stocks routinely move more than others. Articles without a usable
     volatility estimate are dropped, since their z-score is undefined.
     """
-
-    # Approximate number of trading days spanned by each horizon, used to scale
-    # the daily volatility up to the horizon when standardizing a price move into
-    # a z-score (a 7-day window covers roughly five trading sessions).
-    __HORIZON_TRADING_DAYS = {PriceHorizon.ONE_DAY: 1, PriceHorizon.SEVEN_DAYS: 5}
 
     def __init__(self, subtract_market: bool = False, standardize: bool = False):
         """Create the scorer with the label transforms to apply.
@@ -76,7 +72,7 @@ class NewsScorer:
             volatility = article.volatility_30_day
             if not volatility:
                 return None
-            value /= volatility * sqrt(self.__HORIZON_TRADING_DAYS[horizon])
+            value /= volatility * sqrt(HORIZON_TRADING_DAYS[horizon])
         return value
 
     @staticmethod

@@ -1,7 +1,7 @@
 from datetime import date, timedelta
 from math import sqrt
 
-from src.dataset.constants import MIN_VOLATILITY_RETURNS
+from src.constants.dataset import MIN_VOLATILITY_RETURNS
 from src.dataset.news_sampler import NewsSampler
 from src.dataset.price_fetcher import PriceFetcher
 from src.evaluation.news_scorer import NewsScorer

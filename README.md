@@ -32,3 +32,19 @@ python scripts/03_generate_report.py
 
 The `llm*` filters read their API key from `.env`: `AI_API_KEY` for the standard
 variants and `PREMIUM_AI_API_KEY` for the `*_premium` variants.
+
+## Configuration
+
+Secrets live in `.env` (copy `envexample` to `.env` and fill it in). It holds
+only the three API keys: `FINNHUB_API_KEY` (dataset building), `AI_API_KEY` and
+`PREMIUM_AI_API_KEY` (the LLM filters).
+
+Every other constant lives in code under `src/constants/`, grouped by domain:
+
+- `dataset.py`: Finnhub API tuning, symbols and market benchmark, volatility
+  windows and buffers, HTML-cleaning regexes, the SQLite schema and columns, and
+  the dataset output directory.
+- `filtering.py`: LLM models/prompts and key variable names, the FinBERT model,
+  and the rule-based sentiment lexicons.
+- `evaluation.py`: trading days spanned per price horizon.
+- `visualization.py`: the shared figure palette and layout.

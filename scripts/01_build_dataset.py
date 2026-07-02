@@ -3,9 +3,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from config import tickers as ticker_lists  # noqa: E402
-from src.dataset.dataset_builder import DatasetBuilder  # noqa: E402
-from src.utils.json_decoder import JsonDecoder  # noqa: E402
+from config import tickers as ticker_lists
+from src.dataset.dataset_builder import DatasetBuilder
+from src.utils.json_decoder import JsonDecoder
 
 CONFIG_PATH = Path(__file__).resolve().parent.parent.joinpath("config", "dataset_config.json")
 

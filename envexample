@@ -1,0 +1,12 @@
+# Secrets only. Copy this file to `.env` and fill in your real keys.
+# Every other setting lives in code under src/constants/ (see src/constants/dataset.py
+# and src/constants/filtering.py), not here.
+
+# Finnhub API key, used to fetch company news when building a dataset.
+FINNHUB_API_KEY=""
+
+# OpenAI-compatible API key for the standard LLM filter (gpt-4o-mini).
+AI_API_KEY=""
+
+# OpenAI-compatible API key for the premium LLM filter (gpt-4o).
+PREMIUM_AI_API_KEY=""

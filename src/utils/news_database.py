@@ -3,31 +3,12 @@ from collections.abc import Iterable
 from datetime import date
 from pathlib import Path
 
+from src.constants.dataset import NEWS_TABLE_SCHEMA, OPTIONAL_COLUMNS
 from src.models.news_record import NewsRecord
 
 
 class NewsDatabase:
     """Thin SQLite wrapper that creates the schema and stores news rows."""
-
-    __SCHEMA = """
-    CREATE TABLE IF NOT EXISTS news (
-        id                   INTEGER PRIMARY KEY AUTOINCREMENT,
-        news_id              TEXT,
-        news_title           TEXT NOT NULL,
-        news_description     TEXT,
-        ticker               TEXT NOT NULL,
-        news_date            TEXT NOT NULL,
-        price_change_1_day   REAL,
-        price_change_7_days  REAL,
-        market_change_1_day  REAL,
-        market_change_7_days REAL,
-        volatility_30_day    REAL,
-        UNIQUE (ticker, news_date)
-    );
-    """
-
-    # Columns added after the original schema; older databases are migrated lazily.
-    __ADDED_COLUMNS = ("market_change_1_day", "market_change_7_days", "volatility_30_day")
 
     def __init__(self, path: str | Path):
         """Open (creating if needed) the database and ensure the schema exists.
@@ -43,14 +24,14 @@ class NewsDatabase:
 
     def __create_schema(self):
         """Create the news table if missing and migrate older databases."""
-        self.__conn.executescript(self.__SCHEMA)
+        self.__conn.executescript(NEWS_TABLE_SCHEMA)
         self.__migrate()
         self.__conn.commit()
 
     def __migrate(self):
         """Add columns introduced after the original schema to older databases."""
         existing = {row["name"] for row in self.__conn.execute("PRAGMA table_info(news)")}
-        for column in self.__ADDED_COLUMNS:
+        for column in OPTIONAL_COLUMNS:
             if column not in existing:
                 self.__conn.execute(f"ALTER TABLE news ADD COLUMN {column} REAL")
 

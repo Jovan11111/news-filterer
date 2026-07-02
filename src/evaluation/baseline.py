@@ -10,8 +10,8 @@ from src.utils.enums.price_horizon import PriceHorizon
 class Baseline:
     """Source of truth for a batch: the best, worst and average a filter could do.
 
-    Given a batch of news and a selection size ``top_k``, it answers, for every
-    mode and horizon: what is the perfect selection worth (mean of the ``top_k``
+    Given a batch of news and a selection size top_k, it answers, for every
+    mode and horizon: what is the perfect selection worth (mean of the top_k
     best oriented values), what is the worst selection worth, and what does an
     average (random) pick yield. Filters are then judged against these anchors.
     """

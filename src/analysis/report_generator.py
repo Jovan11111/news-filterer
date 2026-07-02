@@ -1,18 +1,24 @@
 from datetime import datetime
 from pathlib import Path
 
-import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
 
-matplotlib.use("Agg")
+from src.analysis.comparison_visualizer import ComparisonVisualizer
+from src.constants.visualization import (
+    COLOR_BUY,
+    COLOR_NEUTRAL,
+    COLOR_TABLE_HEADER,
+    FIGURE_DPI,
+    MODE_COLORS,
+    PAGE_SIZE,
+)
+from src.models.filter_run import FilterRun
+from src.utils.enums.filter_mode import FilterMode
+from src.utils.enums.price_horizon import PriceHorizon
+from src.utils.logger import get_logger
 
-import matplotlib.pyplot as plt  # noqa: E402
-from matplotlib.backends.backend_pdf import PdfPages  # noqa: E402
-
-from src.analysis.comparison_visualizer import ComparisonVisualizer  # noqa: E402
-from src.models.filter_run import FilterRun  # noqa: E402
-from src.utils.enums.filter_mode import FilterMode  # noqa: E402
-from src.utils.enums.price_horizon import PriceHorizon  # noqa: E402
-from src.utils.logger import get_logger  # noqa: E402
+plt.switch_backend("Agg")
 
 logger = get_logger(__name__)
 
@@ -20,12 +26,10 @@ logger = get_logger(__name__)
 class ReportGenerator:
     """Turns a filter's batch-size sweep into PNG graphs and a single PDF report.
 
-    Every figure is saved as a clearly named PNG under ``graphs_dir`` and also
-    embedded into one multi-page PDF under ``reports_dir`` (assembled with
-    matplotlib's ``PdfPages`` so it needs no external converter).
+    Every figure is saved as a clearly named PNG under graphs_dir and also
+    embedded into one multi-page PDF under reports_dir (assembled with
+    matplotlib's PdfPages so it needs no external converter).
     """
-
-    __MODE_COLORS = {FilterMode.BUY: "#27ae60", FilterMode.SELL: "#c0392b", FilterMode.AFFECT: "#2980b9"}
 
     def __init__(self, graphs_dir: Path, reports_dir: Path):
         """Create the generator with the output directories.
@@ -49,7 +53,7 @@ class ReportGenerator:
         return self.__reports_dir
 
     def generate(self, dataset_name: str, top_k: int, seed: int, runs: list[FilterRun], subtract_market: bool = False, standardize: bool = False) -> Path:
-        """Build all graphs and the PDF for ``runs`` and return the PDF path.
+        """Build all graphs and the PDF for runs and return the PDF path.
 
         Args:
             dataset_name (str): Name of the dataset, used in titles and file names.
@@ -63,7 +67,7 @@ class ReportGenerator:
             Path: Path to the written PDF report.
 
         Raises:
-            ValueError: If ``runs`` is empty.
+            ValueError: If runs is empty.
         """
         if not runs:
             raise ValueError("Cannot generate a report from an empty list of runs.")
@@ -117,7 +121,7 @@ class ReportGenerator:
             f"Batch sizes: {sizes}",
             f"Generated: {datetime.now():%Y-%m-%d %H:%M}",
         ]
-        figure = plt.figure(figsize=(11.7, 8.3))
+        figure = plt.figure(figsize=PAGE_SIZE)
         figure.text(0.5, 0.6, "\n".join(lines), ha="center", va="center", fontsize=14, family="monospace")
         return figure
 
@@ -136,10 +140,10 @@ class ReportGenerator:
         figure, axis = plt.subplots(figsize=(11.7, 6))
         for mode in FilterMode:
             values = [self.__score_value(run, mode, horizon, "normalized_score") for run in runs]
-            axis.plot(sizes, values, marker="o", label=mode.value, color=self.__MODE_COLORS[mode])
+            axis.plot(sizes, values, marker="o", label=mode.value, color=MODE_COLORS[mode])
 
-        axis.axhline(0.0, color="#7f8c8d", linestyle="--", linewidth=1, label="average floor")
-        axis.axhline(1.0, color="#27ae60", linestyle=":", linewidth=1, label="ideal")
+        axis.axhline(0.0, color=COLOR_NEUTRAL, linestyle="--", linewidth=1, label="average floor")
+        axis.axhline(1.0, color=COLOR_BUY, linestyle=":", linewidth=1, label="ideal")
         axis.set_xscale("log")
         axis.set_xticks(sizes)
         axis.set_xticklabels([str(size) for size in sizes])
@@ -188,7 +192,7 @@ class ReportGenerator:
         table.set_fontsize(9)
         table.scale(1, 1.5)
         for column in range(len(columns)):
-            table[0, column].set_facecolor("#34495e")
+            table[0, column].set_facecolor(COLOR_TABLE_HEADER)
             table[0, column].set_text_props(color="white", fontweight="bold")
         figure.tight_layout()
         return figure
@@ -196,7 +200,7 @@ class ReportGenerator:
     def __save_png(self, figure, name: str):
         """Save a figure to the graphs directory as a named PNG."""
         path = self.__graphs_dir.joinpath(f"{name}.png")
-        figure.savefig(path, dpi=150)
+        figure.savefig(path, dpi=FIGURE_DPI)
         logger.info(f"Wrote graph to {path}.")
 
     @staticmethod

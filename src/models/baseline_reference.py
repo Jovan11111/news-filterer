@@ -8,9 +8,9 @@ class BaselineReference:
 
     All three values live in the mode's oriented space (higher is better):
 
-    - ``ideal_value`` is the mean of the ``top_k`` best oriented values.
-    - ``average_value`` is the mean over the whole batch (the random-pick floor).
-    - ``worst_value`` is the mean of the ``top_k`` worst oriented values.
+    - ideal_value is the mean of the top_k best oriented values.
+    - average_value is the mean over the whole batch (the random-pick floor).
+    - worst_value is the mean of the top_k worst oriented values.
     """
 
     def __init__(

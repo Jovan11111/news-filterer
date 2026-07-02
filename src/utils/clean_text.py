@@ -1,6 +1,6 @@
 import html
 
-from src.dataset.constants import BROKEN_LEAD_RE, ENCODED_TAG_RE, REAL_TAG_RE, WS_RE
+from src.constants.dataset import BROKEN_LEAD_RE, ENCODED_TAG_RE, REAL_TAG_RE, WS_RE
 
 
 def clean_text(text: str) -> str:

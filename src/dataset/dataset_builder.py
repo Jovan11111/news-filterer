@@ -1,7 +1,7 @@
 from datetime import date
 from pathlib import Path
 
-from src.dataset.constants import MARKET_INDEX_SYMBOL
+from src.constants.dataset import MARKET_INDEX_SYMBOL
 from src.dataset.finnhub_news_fetcher import FinnhubNewsFetcher
 from src.dataset.price_fetcher import PriceFetcher
 from src.models.news_record import NewsRecord
@@ -29,7 +29,7 @@ class DatasetBuilder:
             end_date (date): Last date (inclusive) of the news range.
 
         Raises:
-            ValueError: If ``start_date`` is after ``end_date``.
+            ValueError: If start_date is after end_date.
         """
         self.__tickers = tickers
         if start_date > end_date:
