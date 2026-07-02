@@ -76,3 +76,15 @@ class BaselineReference:
     def ideal_selection(self) -> list[SampledNews]:
         """The top_k articles that form the ideal selection."""
         return self.__ideal_selection
+
+    def to_dict(self) -> dict:
+        """Return this baseline reference as a dict."""
+        return {
+            "mode": self.__mode.value,
+            "horizon": self.__horizon.value,
+            "top_k": self.__top_k,
+            "ideal_value": self.__ideal_value,
+            "average_value": self.__average_value,
+            "worst_value": self.__worst_value,
+            "ideal_selection": [article.to_dict() for article in self.__ideal_selection],
+        }

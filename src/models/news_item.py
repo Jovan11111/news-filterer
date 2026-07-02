@@ -51,3 +51,13 @@ class NewsItem:
     def pub_date(self) -> date:
         """The date the article was published."""
         return self.__pub_date
+
+    def to_dict(self) -> dict:
+        """Return this news item as a dict."""
+        return {
+            "news_id": self.__news_id,
+            "title": self.__title,
+            "description": self.__description,
+            "ticker": self.__ticker,
+            "pub_date": self.__pub_date.isoformat(),
+        }

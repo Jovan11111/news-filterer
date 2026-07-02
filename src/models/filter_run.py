@@ -27,3 +27,10 @@ class FilterRun:
     def evaluation(self) -> EvaluationResult:
         """The evaluation produced for the requested batch size."""
         return self.__evaluation
+
+    def to_dict(self) -> dict:
+        """Return this filter run as a dict."""
+        return {
+            "requested_size": self.__requested_size,
+            "evaluation": self.__evaluation.to_dict(),
+        }

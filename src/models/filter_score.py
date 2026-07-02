@@ -99,3 +99,18 @@ class FilterScore:
     def normalized_score(self) -> float | None:
         """The score on a 0..1 scale (0 = no better than random, 1 = ideal)."""
         return self.__normalized_score
+
+    def to_dict(self) -> dict:
+        """Return this filter score as a dict."""
+        return {
+            "mode": self.__mode.value,
+            "horizon": self.__horizon.value,
+            "top_k": self.__top_k,
+            "filter_value": self.__filter_value,
+            "ideal_value": self.__ideal_value,
+            "average_value": self.__average_value,
+            "worst_value": self.__worst_value,
+            "gap_to_ideal": self.__gap_to_ideal,
+            "lift_over_average": self.__lift_over_average,
+            "normalized_score": self.__normalized_score,
+        }

@@ -51,6 +51,17 @@ class Price:
         """The 7-day percentage price change relative to the base price."""
         return self.__pct(self.__close_after_7_days)
 
+    def to_dict(self) -> dict:
+        """Return these prices and their changes as a dict."""
+        return {
+            "ticker": self.__ticker,
+            "base": self.__base,
+            "close_after_1_day": self.__close_after_1_day,
+            "close_after_7_days": self.__close_after_7_days,
+            "change_1_day": self.change_1_day,
+            "change_7_days": self.change_7_days,
+        }
+
     def __pct(self, future: float | None) -> float | None:
         """Return the percentage change from the base price to a future price."""
         if self.__base is None or future is None or self.__base == 0:

@@ -30,3 +30,11 @@ class DatasetData:
     def end_date(self) -> date:
         """The last date (inclusive) of the news range."""
         return self.__end_date
+
+    def to_dict(self) -> dict:
+        """Return this dataset spec as a dict."""
+        return {
+            "tickers": self.__tickers,
+            "start_date": self.__start_date.isoformat(),
+            "end_date": self.__end_date.isoformat(),
+        }

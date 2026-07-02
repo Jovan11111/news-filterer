@@ -91,3 +91,18 @@ class NewsRecord:
     def volatility_30_day(self) -> float | None:
         """The 30-day trailing return volatility of the stock, in percent."""
         return self.__volatility_30_day
+
+    def to_dict(self) -> dict:
+        """Return this news record as a dict."""
+        return {
+            "news_id": self.__news_id,
+            "news_title": self.__news_title,
+            "news_description": self.__news_description,
+            "ticker": self.__ticker,
+            "news_date": self.__news_date.isoformat(),
+            "price_change_1_day": self.__price_change_1_day,
+            "price_change_7_days": self.__price_change_7_days,
+            "market_change_1_day": self.__market_change_1_day,
+            "market_change_7_days": self.__market_change_7_days,
+            "volatility_30_day": self.__volatility_30_day,
+        }

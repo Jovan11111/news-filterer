@@ -68,3 +68,13 @@ class EvaluationResult:
             if score.mode is mode and score.horizon is horizon:
                 return score
         return None
+
+    def to_dict(self) -> dict:
+        """Return this evaluation result as a dict."""
+        return {
+            "filter_name": self.__filter_name,
+            "batch_size": self.__batch_size,
+            "top_k": self.__top_k,
+            "scores": [score.to_dict() for score in self.__scores],
+            "elapsed_seconds": self.__elapsed_seconds,
+        }

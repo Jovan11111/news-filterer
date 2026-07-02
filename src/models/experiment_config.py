@@ -55,3 +55,15 @@ class ExperimentConfig:
     def standardize(self) -> bool:
         """Whether to divide moves by 30-day volatility (z-scores)."""
         return self.__standardize
+
+    def to_dict(self) -> dict:
+        """Return this experiment config as a dict."""
+        return {
+            "filter_name": self.__filter_name,
+            "batch_size": self.__batch_size,
+            "top_k": self.__top_k,
+            "seed": self.__seed,
+            "scalability_sizes": list(self.__scalability_sizes),
+            "subtract_market": self.__subtract_market,
+            "standardize": self.__standardize,
+        }
