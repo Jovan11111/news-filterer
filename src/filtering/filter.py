@@ -16,8 +16,15 @@ class Filter(ABC):
     def select(
         self, articles: list[SampledNews], mode: FilterMode
     ) -> list[SampledNews]:
-        """Return the subset of articles selected for mode.
+        """Return the subset of articles selected for the given mode.
 
-        Implementations must not mutate articles and should return a (possibly
-        empty) list containing only elements drawn from the input batch.
+        Implementations must not mutate ``articles`` and must return only
+        elements drawn from the input batch.
+
+        Args:
+            articles (list[SampledNews]): The batch of candidate articles.
+            mode (FilterMode): Whether to rank for BUY, SELL or AFFECT.
+
+        Returns:
+            list[SampledNews]: The selected (possibly empty) subset of the batch.
         """

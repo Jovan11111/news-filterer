@@ -1,5 +1,3 @@
-import argparse
-import json
 import sqlite3
 import sys
 from collections.abc import Callable
@@ -15,11 +13,12 @@ from src.filtering.llm_filter import LlmFilter  # noqa: E402
 from src.filtering.random_filter import RandomFilter  # noqa: E402
 from src.filtering.rule_based_filter import RuleBasedFilter  # noqa: E402
 from src.filtering.vader_sentiment_filter import VaderSentimentFilter  # noqa: E402
+from src.utils.json_decoder import JsonDecoder  # noqa: E402
 from src.utils.logger import get_logger  # noqa: E402
 
 logger = get_logger(__name__)
 
-# Maps a CLI name to a factory that builds a fresh filter for each batch-size run.
+# Maps a config filter name to a factory that builds a fresh filter for each batch-size run.
 FILTERS: dict[str, Callable[[int, int], Filter]] = {
     "random": lambda top_k, seed: RandomFilter(top_k=top_k, seed=seed),
     "rule_based": lambda top_k, seed: RuleBasedFilter(top_k=top_k),
@@ -39,13 +38,7 @@ GRAPHS_DIR = ROOT.joinpath("graphs")
 REPORTS_DIR = ROOT.joinpath("results", "reports")
 
 
-def load_config() -> dict:
-    """Read the experiment configuration file."""
-    with open(EXPERIMENT_CONFIG_PATH, "r", encoding="utf-8") as file:
-        return json.load(file)["experiment"]
-
-
-def row_count(dataset: Path) -> int:
+def _row_count(dataset: Path) -> int:
     """Return the number of news rows in a dataset database."""
     connection = sqlite3.connect(str(dataset))
     try:
@@ -54,50 +47,37 @@ def row_count(dataset: Path) -> int:
         connection.close()
 
 
-def pick_dataset() -> Path:
+def _pick_dataset() -> Path:
     """Pick the dataset with the most rows so large batch sizes are reachable."""
     datasets = sorted(DATA_DIR.glob("*.db"))
     if not datasets:
         raise SystemExit(f"No dataset databases found in {DATA_DIR}.")
-    return max(datasets, key=row_count)
-
-
-def parse_args() -> argparse.Namespace:
-    """Parse command-line options, chiefly which filter to evaluate."""
-    parser = argparse.ArgumentParser(description="Generate a PDF report for one filter across batch sizes.")
-    parser.add_argument("--filter", dest="filter_name", choices=sorted(FILTERS), default="random", help="Which filter to run (default: random).")
-    parser.add_argument("--top-k", dest="top_k", type=int, default=None, help="How many articles each filter selects (default: config batching.top_k).")
-    market = parser.add_mutually_exclusive_group()
-    market.add_argument("--subtract-market", dest="subtract_market", action="store_true", default=None, help="Subtract the S&P 500 change (use market-adjusted/abnormal returns).")
-    market.add_argument("--no-subtract-market", dest="subtract_market", action="store_false", help="Use raw price changes (overrides the config flag).")
-    standardize = parser.add_mutually_exclusive_group()
-    standardize.add_argument("--standardize", dest="standardize", action="store_true", default=None, help="Divide moves by 30-day volatility (use z-scored returns).")
-    standardize.add_argument("--no-standardize", dest="standardize", action="store_false", help="Do not standardize (overrides the config flag).")
-    return parser.parse_args()
+    return max(datasets, key=_row_count)
 
 
 def main():
-    args = parse_args()
-    config = load_config()
-    top_k = args.top_k if args.top_k is not None else int(config["batching"]["top_k"])
-    if top_k <= 0:
-        raise SystemExit(f"top_k must be positive, got {top_k}.")
-    seed = int(config["batching"]["random_seed"])
-    batch_sizes = [int(size) for size in config["evaluation"]["scalability_sizes"]]
-    config_subtract = bool(config["evaluation"].get("subtract_market", False))
-    subtract_market = args.subtract_market if args.subtract_market is not None else config_subtract
-    config_standardize = bool(config["evaluation"].get("standardize", False))
-    standardize = args.standardize if args.standardize is not None else config_standardize
+    """Run the configured filter across batch sizes and write the graphs and PDF report."""
+    config = JsonDecoder.decode_experiment(EXPERIMENT_CONFIG_PATH)
+    if config.filter_name not in FILTERS:
+        raise SystemExit(f"Unknown filter '{config.filter_name}'. Choose one of: {', '.join(sorted(FILTERS))}.")
+    if config.top_k <= 0:
+        raise SystemExit(f"top_k must be positive, got {config.top_k}.")
 
-    dataset = pick_dataset()
-    available = row_count(dataset)
+    top_k = config.top_k
+    seed = config.seed
+    batch_sizes = config.scalability_sizes
+    subtract_market = config.subtract_market
+    standardize = config.standardize
+
+    dataset = _pick_dataset()
+    available = _row_count(dataset)
     logger.info(f"Using dataset {dataset.name} with {available} rows for batch sizes {batch_sizes}.")
 
-    factory = FILTERS[args.filter_name]
+    factory = FILTERS[config.filter_name]
     label = "market-adjusted" if subtract_market else "raw"
     if standardize:
         label += ", z-scored"
-    logger.info(f"Running filter '{args.filter_name}' with top_k={top_k} on {label} returns.")
+    logger.info(f"Running filter '{config.filter_name}' with top_k={top_k} on {label} returns.")
 
     runner = FilterRunner(dataset=dataset, top_k=top_k, seed=seed, subtract_market=subtract_market, standardize=standardize)
     runs = runner.run(lambda: factory(top_k, seed), batch_sizes)

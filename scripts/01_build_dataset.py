@@ -11,6 +11,7 @@ CONFIG_PATH = Path(__file__).resolve().parent.parent.joinpath("config", "dataset
 
 
 def main():
+    """Build the dataset described by config/dataset_config.json and print its path."""
     dataset_config = JsonDecoder.decode(CONFIG_PATH)
 
     try:

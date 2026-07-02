@@ -1,34 +1,15 @@
 import os
-from dataclasses import dataclass
 from pathlib import Path
 from threading import Lock
 
 from dotenv import load_dotenv
 
-
-def _require_env(name: str) -> str:
-    value = os.getenv(name)
-    if not value:
-        raise ValueError(f"Missing required environment variable: {name}")
-    return value
-
-
-@dataclass(frozen=True)
-class AppConfig:
-    # Dataset
-    dataset_output_dir: Path
-
-    # Finnhub news fetcher
-    finnhub_api_key: str
-    finnhub_rate_limit_delay: float
-    finnhub_timeout: float
-    finnhub_max_retries: int
-    finnhub_chunk_days: int
-    finnhub_page_cap: int
-    finnhub_min_interval: float
+from src.utils.app_config import AppConfig
 
 
 class ConfigProvider:
+    """Loads and caches the process-wide application configuration."""
+
     _config: AppConfig | None = None
     _lock = Lock()
 
@@ -47,7 +28,7 @@ class ConfigProvider:
                         dataset_output_dir=Path(
                             os.getenv("DATASET_OUTPUT_DIR", "data")
                         ),
-                        finnhub_api_key=_require_env("FINNHUB_API_KEY"),
+                        finnhub_api_key=cls.__require_env("FINNHUB_API_KEY"),
                         finnhub_rate_limit_delay=float(
                             os.getenv("FINNHUB_RATE_LIMIT_DELAY", "1.0")
                         ),
@@ -59,11 +40,10 @@ class ConfigProvider:
                     )
         return cls._config
 
-
-def get_config() -> AppConfig:
-    """Return the process-wide application configuration.
-
-    Returns:
-        AppConfig: The loaded application configuration.
-    """
-    return ConfigProvider.get()
+    @staticmethod
+    def __require_env(name: str) -> str:
+        """Return the value of a required environment variable or raise if it is unset."""
+        value = os.getenv(name)
+        if not value:
+            raise ValueError(f"Missing required environment variable: {name}")
+        return value

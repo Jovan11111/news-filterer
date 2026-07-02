@@ -6,7 +6,7 @@ import requests
 from src.dataset.constants import BASE_URL, SYMBOL_ALIASES
 from src.models.news_item import NewsItem
 from src.utils.clean_text import clean_text
-from src.utils.config import get_config
+from src.utils.config_provider import ConfigProvider
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -49,7 +49,13 @@ class FinnhubNewsFetcher:
     """Collects real company news for a ticker over an explicit date range."""
 
     def __init__(self, start: date, end: date):
-        self.__config = get_config()
+        """Create the fetcher for a date range and open an HTTP session.
+
+        Args:
+            start (date): First date (inclusive) of news to fetch.
+            end (date): Last date (inclusive) of news to fetch.
+        """
+        self.__config = ConfigProvider.get()
         self.__start = start
         self.__end = end
         self.__last_request_ts = 0.0
@@ -63,12 +69,7 @@ class FinnhubNewsFetcher:
         self.__last_request_ts = time.monotonic()
 
     def __request(self, ticker: str, start: date, end: date) -> list[dict]:
-        """Call the Finnhub company-news endpoint with throttling and retry.
-        
-        Tries to retrieve news max_retries times. Every time it fails, sleeps a bit more.
-        
-        Returns a list of raw news dicts, that represent JSON response from Finnhub API.
-        """
+        """Call the Finnhub company-news endpoint with throttling and retries, returning raw dicts."""
         params = {
             "symbol": SYMBOL_ALIASES.get(ticker, ticker),
             "from": start.isoformat(),

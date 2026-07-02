@@ -1,5 +1,3 @@
-import functools
-
 from transformers import pipeline
 
 from src.filtering.filter import Filter
@@ -8,21 +6,6 @@ from src.utils.enums.filter_mode import FilterMode
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
-
-_MODEL_NAME = "ProsusAI/finbert"
-_INFERENCE_BATCH_SIZE = 32
-
-
-@functools.lru_cache(maxsize=1)
-def _load_pipeline():
-    """Load the FinBERT classification pipeline once and share it everywhere.
-
-    The model (~440 MB) is downloaded on first use and cached by the lru_cache so
-    that constructing several filter instances (one per batch-size run) reuses a
-    single in-memory model instead of reloading it each time.
-    """
-    logger.info(f"Loading FinBERT model '{_MODEL_NAME}' (downloads on first run).")
-    return pipeline("text-classification", model=_MODEL_NAME, top_k=None, truncation=True)
 
 
 class FinbertFilter(Filter):
@@ -47,26 +30,51 @@ class FinbertFilter(Filter):
     side. The filter never looks at price data, so it predicts from text alone.
     """
 
+    __MODEL_NAME = "ProsusAI/finbert"
+    __INFERENCE_BATCH_SIZE = 32
+
+    # The FinBERT pipeline (~440 MB) is loaded once and shared across every
+    # instance (one per batch-size run) instead of being reloaded each time.
+    __shared_pipeline = None
+
     def __init__(self, top_k: int = 10, is_cached: bool = False):
+        """Create the filter and obtain the shared FinBERT pipeline.
+
+        Args:
+            top_k (int): Number of articles to select from each batch.
+            is_cached (bool): Whether to cache per-article signals across modes.
+        """
         self.__top_k = top_k
         self.__is_cached = is_cached
-        self.__pipeline = _load_pipeline()
+        self.__pipeline = self.__load_pipeline()
         self.__cache: dict[str, float] = {}
+
+    @classmethod
+    def __load_pipeline(cls):
+        """Load and cache the shared FinBERT pipeline, downloading it on first use."""
+        if cls.__shared_pipeline is None:
+            logger.info(f"Loading FinBERT model '{cls.__MODEL_NAME}' (downloads on first run).")
+            cls.__shared_pipeline = pipeline("text-classification", model=cls.__MODEL_NAME, top_k=None, truncation=True)
+        return cls.__shared_pipeline
 
     @property
     def name(self) -> str:
+        """The unique identifier of this filter (cached or uncached variant)."""
         return "finbert_cached" if self.__is_cached else "finbert"
 
     @property
     def top_k(self) -> int:
+        """The number of articles the filter selects."""
         return self.__top_k
 
     @property
     def is_cached(self) -> bool:
+        """Whether per-article signals are cached across modes."""
         return self.__is_cached
 
     @staticmethod
     def __text(article: SampledNews) -> str:
+        """Return the article's title and description joined into one string."""
         return f"{article.news_title} {article.news_description or ''}".strip()
 
     @staticmethod
@@ -80,7 +88,7 @@ class FinbertFilter(Filter):
         if not articles:
             return []
         texts = [self.__text(article) for article in articles]
-        results = self.__pipeline(texts, truncation=True, batch_size=_INFERENCE_BATCH_SIZE)
+        results = self.__pipeline(texts, truncation=True, batch_size=self.__INFERENCE_BATCH_SIZE)
         return [self.__compound(scores) for scores in results]
 
     def __signals(self, articles: list[SampledNews]) -> list[float]:
@@ -93,12 +101,28 @@ class FinbertFilter(Filter):
         return [self.__cache[article.news_id] for article in articles]
 
     def signal(self, article: SampledNews) -> float:
-        """Return FinBERT's directional sentiment for one article in ``[-1, 1]``."""
+        """Return FinBERT's directional sentiment for one article in ``[-1, 1]``.
+
+        Args:
+            article (SampledNews): The article whose title and description are scored.
+
+        Returns:
+            float: P(positive) - P(negative), from -1 (negative) to 1 (positive).
+        """
         return self.__signals([article])[0]
 
     def select(
         self, articles: list[SampledNews], mode: FilterMode
     ) -> list[SampledNews]:
+        """Rank the batch by FinBERT sentiment and return the top articles for the mode.
+
+        Args:
+            articles (list[SampledNews]): The batch of candidate articles.
+            mode (FilterMode): Whether to rank for BUY, SELL or AFFECT.
+
+        Returns:
+            list[SampledNews]: Up to top_k articles ordered best-first for the mode.
+        """
         if len(articles) <= self.__top_k:
             return list(articles)
         signals = self.__signals(list(articles))

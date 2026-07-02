@@ -20,6 +20,14 @@ class NewsSampler:
         min_gap_days: int = 7,
         seed: int = 74,
     ):
+        """Create the sampler for one database and sampling constraints.
+
+        Args:
+            database (Path): Path to the dataset database to sample from.
+            batch_size (int): Number of rows to draw per sample.
+            min_gap_days (int): Minimum days between two picks of the same ticker.
+            seed (int): Seed for the internal random generator.
+        """
         self.__db_path = database
         self.__batch_size = batch_size
         self.__min_gap_days = min_gap_days
@@ -27,18 +35,22 @@ class NewsSampler:
 
     @property
     def batch_size(self) -> int:
+        """The number of rows drawn per sample."""
         return self.__batch_size
 
     @batch_size.setter
     def batch_size(self, value: int):
+        """Set the number of rows drawn per sample."""
         self.__batch_size = value
 
     @property
     def db_path(self) -> Path:
+        """The path to the database being sampled."""
         return self.__db_path
 
     @db_path.setter
     def db_path(self, value: Path):
+        """Set the path to the database being sampled."""
         self.__db_path = value
 
     def seed(self, value: int):
@@ -84,10 +96,10 @@ class NewsSampler:
         return optional & names
 
     def sample(self) -> list[SampledNews]:
-        """Sample the news randomly based on given criteria
+        """Draw a random batch of news rows subject to the per-ticker time gap.
 
         Returns:
-            list[SampledNews]: List of chosen news rows, each with a unique ticker and spaced by at least min_gap_days.
+            list[SampledNews]: Chosen rows, each spaced by at least min_gap_days per ticker.
         """
         rows = self.__load_all()
         self.__rng.shuffle(rows)

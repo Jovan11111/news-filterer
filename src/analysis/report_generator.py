@@ -16,8 +16,6 @@ from src.utils.logger import get_logger  # noqa: E402
 
 logger = get_logger(__name__)
 
-_MODE_COLORS = {FilterMode.BUY: "#27ae60", FilterMode.SELL: "#c0392b", FilterMode.AFFECT: "#2980b9"}
-
 
 class ReportGenerator:
     """Turns a filter's batch-size sweep into PNG graphs and a single PDF report.
@@ -27,21 +25,46 @@ class ReportGenerator:
     matplotlib's ``PdfPages`` so it needs no external converter).
     """
 
+    __MODE_COLORS = {FilterMode.BUY: "#27ae60", FilterMode.SELL: "#c0392b", FilterMode.AFFECT: "#2980b9"}
+
     def __init__(self, graphs_dir: Path, reports_dir: Path):
+        """Create the generator with the output directories.
+
+        Args:
+            graphs_dir (Path): Directory the PNG graphs are written to.
+            reports_dir (Path): Directory the PDF report is written to.
+        """
         self.__graphs_dir = graphs_dir
         self.__reports_dir = reports_dir
         self.__comparison = ComparisonVisualizer(output_dir=graphs_dir)
 
     @property
     def graphs_dir(self) -> Path:
+        """The directory the PNG graphs are written to."""
         return self.__graphs_dir
 
     @property
     def reports_dir(self) -> Path:
+        """The directory the PDF report is written to."""
         return self.__reports_dir
 
     def generate(self, dataset_name: str, top_k: int, seed: int, runs: list[FilterRun], subtract_market: bool = False, standardize: bool = False) -> Path:
-        """Build all graphs and the PDF for ``runs`` and return the PDF path."""
+        """Build all graphs and the PDF for ``runs`` and return the PDF path.
+
+        Args:
+            dataset_name (str): Name of the dataset, used in titles and file names.
+            top_k (int): Selection size the runs were evaluated with.
+            seed (int): Random seed the runs were sampled with.
+            runs (list[FilterRun]): The per-batch-size evaluations to report on.
+            subtract_market (bool): Whether the returns are market-adjusted.
+            standardize (bool): Whether the returns are z-scored.
+
+        Returns:
+            Path: Path to the written PDF report.
+
+        Raises:
+            ValueError: If ``runs`` is empty.
+        """
         if not runs:
             raise ValueError("Cannot generate a report from an empty list of runs.")
 
@@ -70,14 +93,15 @@ class ReportGenerator:
                 self.__add(pdf, comparison)
                 self.__add(pdf, self.__price_table_figure(run))
 
-            self.__add(pdf, self.__summary_figure(runs, "Normalized score (0 = average, 1 = ideal)", "normalized_score", _format_plain))
-            self.__add(pdf, self.__summary_figure(runs, "Gap to ideal (lower is better)", "gap_to_ideal", _format_signed))
-            self.__add(pdf, self.__summary_figure(runs, "Lift over average (higher is better)", "lift_over_average", _format_signed))
+            self.__add(pdf, self.__summary_figure(runs, "Normalized score (0 = average, 1 = ideal)", "normalized_score", self.__format_plain))
+            self.__add(pdf, self.__summary_figure(runs, "Gap to ideal (lower is better)", "gap_to_ideal", self.__format_signed))
+            self.__add(pdf, self.__summary_figure(runs, "Lift over average (higher is better)", "lift_over_average", self.__format_signed))
 
         logger.info(f"Wrote PDF report to {pdf_path}.")
         return pdf_path
 
     def __title_figure(self, filter_name: str, dataset_name: str, top_k: int, seed: int, runs: list[FilterRun], subtract_market: bool, standardize: bool):
+        """Build the title page listing the run's parameters."""
         sizes = ", ".join(str(run.requested_size) for run in runs)
         returns_label = "market-adjusted (S&P 500 subtracted)" if subtract_market else "raw price change"
         if standardize:
@@ -98,6 +122,7 @@ class ReportGenerator:
         return figure
 
     def __overview_figure(self, runs: list[FilterRun]):
+        """Build the table of requested vs sampled sizes and filter timings."""
         columns = ["requested batch", "sampled articles", "filter time (ms)"]
         rows = [
             [str(run.requested_size), str(run.evaluation.batch_size), f"{run.evaluation.elapsed_seconds * 1000:.2f}"]
@@ -106,11 +131,12 @@ class ReportGenerator:
         return self.__table_figure("Run overview", columns, rows)
 
     def __scalability_figure(self, runs: list[FilterRun], horizon: PriceHorizon):
+        """Build the normalized-score-vs-batch-size line chart for one horizon."""
         sizes = [run.requested_size for run in runs]
         figure, axis = plt.subplots(figsize=(11.7, 6))
         for mode in FilterMode:
-            values = [_score_value(run, mode, horizon, "normalized_score") for run in runs]
-            axis.plot(sizes, values, marker="o", label=mode.value, color=_MODE_COLORS[mode])
+            values = [self.__score_value(run, mode, horizon, "normalized_score") for run in runs]
+            axis.plot(sizes, values, marker="o", label=mode.value, color=self.__MODE_COLORS[mode])
 
         axis.axhline(0.0, color="#7f8c8d", linestyle="--", linewidth=1, label="average floor")
         axis.axhline(1.0, color="#27ae60", linestyle=":", linewidth=1, label="ideal")
@@ -126,6 +152,7 @@ class ReportGenerator:
         return figure
 
     def __price_table_figure(self, run: FilterRun):
+        """Build the per-mode/horizon oriented price change table for one run."""
         columns = ["mode", "horizon", "filter", "ideal", "average", "worst"]
         rows = []
         for mode in FilterMode:
@@ -133,24 +160,26 @@ class ReportGenerator:
                 score = run.evaluation.score(mode, horizon)
                 rows.append([
                     mode.value, horizon.value,
-                    _format_signed(getattr(score, "filter_value", None)),
-                    _format_signed(getattr(score, "ideal_value", None)),
-                    _format_signed(getattr(score, "average_value", None)),
-                    _format_signed(getattr(score, "worst_value", None)),
+                    self.__format_signed(getattr(score, "filter_value", None)),
+                    self.__format_signed(getattr(score, "ideal_value", None)),
+                    self.__format_signed(getattr(score, "average_value", None)),
+                    self.__format_signed(getattr(score, "worst_value", None)),
                 ])
         title = f"Oriented price change (%) - batch {run.requested_size} (sample {run.evaluation.batch_size})"
         return self.__table_figure(title, columns, rows)
 
     def __summary_figure(self, runs: list[FilterRun], title: str, field: str, formatter):
+        """Build a table of one score field across every run and mode/horizon."""
         columns = ["mode", "horizon"] + [str(run.requested_size) for run in runs]
         rows = []
         for mode in FilterMode:
             for horizon in PriceHorizon:
-                cells = [formatter(_score_value(run, mode, horizon, field)) for run in runs]
+                cells = [formatter(self.__score_value(run, mode, horizon, field)) for run in runs]
                 rows.append([mode.value, horizon.value] + cells)
         return self.__table_figure(title, columns, rows)
 
     def __table_figure(self, title: str, columns: list[str], rows: list[list[str]]):
+        """Build a styled matplotlib table figure from column headers and rows."""
         figure, axis = plt.subplots(figsize=(11.7, max(2.5, 0.5 * len(rows) + 1.5)))
         axis.axis("off")
         axis.set_title(title, fontsize=12, pad=12)
@@ -165,24 +194,29 @@ class ReportGenerator:
         return figure
 
     def __save_png(self, figure, name: str):
+        """Save a figure to the graphs directory as a named PNG."""
         path = self.__graphs_dir.joinpath(f"{name}.png")
         figure.savefig(path, dpi=150)
         logger.info(f"Wrote graph to {path}.")
 
     @staticmethod
     def __add(pdf: PdfPages, figure):
+        """Append a figure as a page to the PDF and close it."""
         pdf.savefig(figure)
         plt.close(figure)
 
+    @staticmethod
+    def __score_value(run: FilterRun, mode: FilterMode, horizon: PriceHorizon, field: str) -> float | None:
+        """Return one score field for a run's mode/horizon, or None when missing."""
+        score = run.evaluation.score(mode, horizon)
+        return getattr(score, field, None) if score is not None else None
 
-def _score_value(run: FilterRun, mode: FilterMode, horizon: PriceHorizon, field: str) -> float | None:
-    score = run.evaluation.score(mode, horizon)
-    return getattr(score, field, None) if score is not None else None
+    @staticmethod
+    def __format_signed(value: float | None) -> str:
+        """Format a value with an explicit sign, or 'n/a' when None."""
+        return "n/a" if value is None else f"{value:+.3f}"
 
-
-def _format_signed(value: float | None) -> str:
-    return "n/a" if value is None else f"{value:+.3f}"
-
-
-def _format_plain(value: float | None) -> str:
-    return "n/a" if value is None else f"{value:.3f}"
+    @staticmethod
+    def __format_plain(value: float | None) -> str:
+        """Format a value without a forced sign, or 'n/a' when None."""
+        return "n/a" if value is None else f"{value:.3f}"

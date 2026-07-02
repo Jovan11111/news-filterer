@@ -25,25 +25,48 @@ class VaderSentimentFilter(Filter):
     """
 
     def __init__(self, top_k: int = 10):
+        """Create the filter with a selection size and a VADER analyzer.
+
+        Args:
+            top_k (int): Number of articles to select from each batch.
+        """
         self.__top_k = top_k
         self.__analyzer = SentimentIntensityAnalyzer()
 
     @property
     def name(self) -> str:
+        """The unique identifier of this filter."""
         return "vader"
 
     @property
     def top_k(self) -> int:
+        """The number of articles the filter selects."""
         return self.__top_k
 
     def signal(self, article: SampledNews) -> float:
-        """Return VADER's compound sentiment score for one article in ``[-1, 1]``."""
+        """Return VADER's compound sentiment score for one article in ``[-1, 1]``.
+
+        Args:
+            article (SampledNews): The article whose title and description are scored.
+
+        Returns:
+            float: The VADER compound sentiment score, from -1 (negative) to 1 (positive).
+        """
         text = f"{article.news_title} {article.news_description or ''}".strip()
         return self.__analyzer.polarity_scores(text)["compound"]
 
     def select(
         self, articles: list[SampledNews], mode: FilterMode
     ) -> list[SampledNews]:
+        """Rank the batch by VADER sentiment and return the top articles for the mode.
+
+        Args:
+            articles (list[SampledNews]): The batch of candidate articles.
+            mode (FilterMode): Whether to rank for BUY, SELL or AFFECT.
+
+        Returns:
+            list[SampledNews]: Up to top_k articles ordered best-first for the mode.
+        """
         if len(articles) <= self.__top_k:
             return list(articles)
         scored = [(article, self.signal(article)) for article in articles]

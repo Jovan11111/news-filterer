@@ -23,6 +23,17 @@ class BaselineReference:
         worst_value: float | None,
         ideal_selection: list[SampledNews],
     ):
+        """Store the source-of-truth values for one mode and horizon over a batch.
+
+        Args:
+            mode (FilterMode): The selection mode the values were computed for.
+            horizon (PriceHorizon): The price horizon the values were computed for.
+            top_k (int): Selection size the ideal and worst means were taken over.
+            ideal_value (float | None): Mean of the top_k best oriented values.
+            average_value (float | None): Mean oriented value over the whole batch.
+            worst_value (float | None): Mean of the top_k worst oriented values.
+            ideal_selection (list[SampledNews]): The top_k articles forming the ideal pick.
+        """
         self.__mode = mode
         self.__horizon = horizon
         self.__top_k = top_k
@@ -33,28 +44,35 @@ class BaselineReference:
 
     @property
     def mode(self) -> FilterMode:
+        """The selection mode the values were computed for."""
         return self.__mode
 
     @property
     def horizon(self) -> PriceHorizon:
+        """The price horizon the values were computed for."""
         return self.__horizon
 
     @property
     def top_k(self) -> int:
+        """The selection size the ideal and worst means were taken over."""
         return self.__top_k
 
     @property
     def ideal_value(self) -> float | None:
+        """The mean of the top_k best oriented values (the perfect pick)."""
         return self.__ideal_value
 
     @property
     def average_value(self) -> float | None:
+        """The mean oriented value over the whole batch (the random-pick floor)."""
         return self.__average_value
 
     @property
     def worst_value(self) -> float | None:
+        """The mean of the top_k worst oriented values."""
         return self.__worst_value
 
     @property
     def ideal_selection(self) -> list[SampledNews]:
+        """The top_k articles that form the ideal selection."""
         return self.__ideal_selection

@@ -13,11 +13,6 @@ from src.utils.logger import get_logger  # noqa: E402
 
 logger = get_logger(__name__)
 
-_SERIES = ("worst_value", "average_value", "filter_value", "ideal_value")
-_SERIES_LABELS = ("worst", "average", "filter", "ideal")
-_SERIES_COLORS = ("#c0392b", "#7f8c8d", "#2980b9", "#27ae60")
-_BAR_WIDTH = 0.2
-
 
 class ComparisonVisualizer:
     """Draws a filter's selection against the ideal/average/worst baseline.
@@ -28,15 +23,34 @@ class ComparisonVisualizer:
     at a glance.
     """
 
+    __SERIES = ("worst_value", "average_value", "filter_value", "ideal_value")
+    __SERIES_LABELS = ("worst", "average", "filter", "ideal")
+    __SERIES_COLORS = ("#c0392b", "#7f8c8d", "#2980b9", "#27ae60")
+    __BAR_WIDTH = 0.2
+
     def __init__(self, output_dir: Path):
+        """Create the visualizer with the directory figures are written to.
+
+        Args:
+            output_dir (Path): Directory the comparison PNGs are saved in.
+        """
         self.__output_dir = output_dir
 
     @property
     def output_dir(self) -> Path:
+        """The directory the comparison PNGs are saved in."""
         return self.__output_dir
 
     def render(self, result: EvaluationResult, tag: str) -> Path:
-        """Render ``result`` to a PNG named after the filter and ``tag``."""
+        """Render ``result`` to a PNG named after the filter and ``tag``.
+
+        Args:
+            result (EvaluationResult): The evaluation to visualize.
+            tag (str): Suffix identifying the dataset in the file name and title.
+
+        Returns:
+            Path: Path to the written PNG figure.
+        """
         title = f"Filter '{result.filter_name}' vs baseline ({tag}) - top {result.top_k} of {result.batch_size}"
         figure = self.build_comparison_figure(result, title)
 
@@ -48,7 +62,15 @@ class ComparisonVisualizer:
         return path
 
     def build_comparison_figure(self, result: EvaluationResult, title: str):
-        """Build (without saving) the per-mode/horizon comparison figure."""
+        """Build (without saving) the per-mode/horizon comparison figure.
+
+        Args:
+            result (EvaluationResult): The evaluation to visualize.
+            title (str): The figure's overall title.
+
+        Returns:
+            Figure: The assembled matplotlib figure.
+        """
         horizons = list(PriceHorizon)
         modes = list(FilterMode)
 
@@ -62,12 +84,13 @@ class ComparisonVisualizer:
 
 
     def __draw_panel(self, axis, result: EvaluationResult, modes: list[FilterMode], horizon: PriceHorizon):
+        """Draw the worst/average/filter/ideal bars for every mode on one horizon panel."""
         positions = list(range(len(modes)))
-        offsets = [(index - (len(_SERIES) - 1) / 2) * _BAR_WIDTH for index in range(len(_SERIES))]
+        offsets = [(index - (len(self.__SERIES) - 1) / 2) * self.__BAR_WIDTH for index in range(len(self.__SERIES))]
 
-        for series, label, color, offset in zip(_SERIES, _SERIES_LABELS, _SERIES_COLORS, offsets):
+        for series, label, color, offset in zip(self.__SERIES, self.__SERIES_LABELS, self.__SERIES_COLORS, offsets):
             heights = [self.__value(result.score(mode, horizon), series) for mode in modes]
-            axis.bar([position + offset for position in positions], heights, _BAR_WIDTH, label=label, color=color)
+            axis.bar([position + offset for position in positions], heights, self.__BAR_WIDTH, label=label, color=color)
 
         axis.set_title(f"{horizon.value} horizon")
         axis.set_xticks(positions)
@@ -78,6 +101,7 @@ class ComparisonVisualizer:
 
     @staticmethod
     def __value(score, field: str) -> float:
+        """Return a score field as a plottable number, treating missing values as 0."""
         if score is None:
             return 0.0
         value = getattr(score, field)

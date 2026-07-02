@@ -5,8 +5,8 @@ from src.dataset.constants import MARKET_INDEX_SYMBOL
 from src.dataset.finnhub_news_fetcher import FinnhubNewsFetcher
 from src.dataset.price_fetcher import PriceFetcher
 from src.models.news_record import NewsRecord
-from src.utils.config import get_config
-from src.utils.database import NewsDatabase
+from src.utils.config_provider import ConfigProvider
+from src.utils.news_database import NewsDatabase
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -21,6 +21,16 @@ class DatasetBuilder:
         start_date: date,
         end_date: date,
     ):
+        """Create the builder for a ticker list and date range.
+
+        Args:
+            tickers (list[str]): The tickers to collect news and prices for.
+            start_date (date): First date (inclusive) of the news range.
+            end_date (date): Last date (inclusive) of the news range.
+
+        Raises:
+            ValueError: If ``start_date`` is after ``end_date``.
+        """
         self.__tickers = tickers
         if start_date > end_date:
             raise ValueError(
@@ -36,7 +46,7 @@ class DatasetBuilder:
     def db_path(self) -> Path:
         """Path of the DB that will be created, name of the db is: sp{N}_{start}_{end}."""
         name = f"sp{len(self.__tickers)}_{self.__start.isoformat()}_{self.__end.isoformat()}.db"
-        return get_config().dataset_output_dir.joinpath(name)
+        return ConfigProvider.get().dataset_output_dir.joinpath(name)
 
     def build(self) -> Path:
         """Run the full pipeline and return the path of the written database.
@@ -57,6 +67,7 @@ class DatasetBuilder:
         return self.db_path
 
     def __process_ticker(self, db: NewsDatabase, ticker: str, idx: int):
+        """Fetch, price and persist the news rows for a single ticker."""
         try:
             per_day = self.__news_fetcher.fetch_one_per_day(ticker)
         except Exception as e:

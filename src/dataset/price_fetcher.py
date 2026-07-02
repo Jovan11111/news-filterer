@@ -19,6 +19,7 @@ class PriceFetcher:
     """Computes 1-day and 7-day forward price changes for a ticker."""
 
     def __init__(self):
+        """Create an empty fetcher with no loaded price history."""
         self.__prices: dict[str, dict[date, float]] = {}
 
     @staticmethod
@@ -59,16 +60,25 @@ class PriceFetcher:
         self.__prices[ticker] = {ts.date(): float(close) for ts, close in hist["Close"].items()}
 
     def has_history(self, ticker: str) -> bool:
-        """Whether any daily closes were loaded for ``ticker`` (i.e. it is priceable)."""
+        """Return whether any daily closes were loaded for a ticker.
+
+        Args:
+            ticker (str): The ticker to check.
+
+        Returns:
+            bool: True if the ticker has loaded price history (is priceable).
+        """
         return bool(self.__prices.get(ticker))
 
     @staticmethod
     def __close_on_or_before(closes: dict[date, float], target: date) -> float | None:
+        """Return the close on or before the target date, or None when none exists."""
         prior = [d for d in closes if d <= target]
         return closes[max(prior)] if prior else None
 
     @staticmethod
     def __close_on_or_after(closes: dict[date, float], target: date) -> float | None:
+        """Return the close on or after the target date, or None when none exists."""
         later = [d for d in closes if d >= target]
         return closes[min(later)] if later else None
 

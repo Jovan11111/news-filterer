@@ -11,19 +11,6 @@ from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-_STANDARD_MODEL = "gpt-4o-mini"
-_PREMIUM_MODEL = "gpt-4o"
-_STANDARD_KEY_ENV = "AI_API_KEY"
-_PREMIUM_KEY_ENV = "PREMIUM_AI_API_KEY"
-
-_DESCRIPTION_CHARS = 200
-
-_INSTRUCTIONS = {
-    FilterMode.BUY: "rise the most (strongest positive price reaction)",
-    FilterMode.SELL: "fall the most (strongest negative price reaction)",
-    FilterMode.AFFECT: "move the most in either direction (largest absolute price reaction)",
-}
-
 
 class LlmFilter(Filter):
     """Selects news by asking a large language model which headlines matter most.
@@ -47,6 +34,19 @@ class LlmFilter(Filter):
     price data, so it predicts from text alone.
     """
 
+    __STANDARD_MODEL = "gpt-4o-mini"
+    __PREMIUM_MODEL = "gpt-4o"
+    __STANDARD_KEY_ENV = "AI_API_KEY"
+    __PREMIUM_KEY_ENV = "PREMIUM_AI_API_KEY"
+
+    __DESCRIPTION_CHARS = 200
+
+    __INSTRUCTIONS = {
+        FilterMode.BUY: "rise the most (strongest positive price reaction)",
+        FilterMode.SELL: "fall the most (strongest negative price reaction)",
+        FilterMode.AFFECT: "move the most in either direction (largest absolute price reaction)",
+    }
+
     def __init__(
         self,
         top_k: int = 10,
@@ -57,6 +57,20 @@ class LlmFilter(Filter):
         model: str | None = None,
         client: object | None = None,
     ):
+        """Create the filter and record its configuration (client stays lazy).
+
+        Args:
+            top_k (int): Number of articles to select from each batch.
+            is_premium (bool): Use the premium model and key instead of the standard ones.
+            is_tournament (bool): Rank very large batches via a hierarchical tournament.
+            group_size (int): Group size used per round in tournament mode.
+            seed (int): Seed passed to the model for reproducible completions.
+            model (str | None): Explicit model name; defaults from is_premium when None.
+            client (object | None): Pre-built client, mainly for testing; built lazily otherwise.
+
+        Raises:
+            ValueError: If tournament mode is on but group_size is not greater than top_k.
+        """
         if is_tournament and group_size <= top_k:
             raise ValueError("group_size must be greater than top_k for tournament selection.")
         self.__top_k = top_k
@@ -64,12 +78,13 @@ class LlmFilter(Filter):
         self.__is_tournament = is_tournament
         self.__group_size = group_size
         self.__seed = seed
-        self.__model = model or (_PREMIUM_MODEL if is_premium else _STANDARD_MODEL)
-        self.__key_env = _PREMIUM_KEY_ENV if is_premium else _STANDARD_KEY_ENV
+        self.__model = model or (self.__PREMIUM_MODEL if is_premium else self.__STANDARD_MODEL)
+        self.__key_env = self.__PREMIUM_KEY_ENV if is_premium else self.__STANDARD_KEY_ENV
         self.__client = client
 
     @property
     def name(self) -> str:
+        """The unique identifier of this filter, reflecting its premium/tournament flags."""
         parts = ["llm"]
         if self.__is_premium:
             parts.append("premium")
@@ -79,27 +94,41 @@ class LlmFilter(Filter):
 
     @property
     def top_k(self) -> int:
+        """The number of articles the filter selects."""
         return self.__top_k
 
     @property
     def is_premium(self) -> bool:
+        """Whether the premium model and API key are used."""
         return self.__is_premium
 
     @property
     def is_tournament(self) -> bool:
+        """Whether selection uses the hierarchical tournament."""
         return self.__is_tournament
 
     @property
     def group_size(self) -> int:
+        """The group size used per round in tournament mode."""
         return self.__group_size
 
     @property
     def model(self) -> str:
+        """The name of the model used for completions."""
         return self.__model
 
     def select(
         self, articles: list[SampledNews], mode: FilterMode
     ) -> list[SampledNews]:
+        """Ask the model which articles matter most and return its top picks for the mode.
+
+        Args:
+            articles (list[SampledNews]): The batch of candidate articles.
+            mode (FilterMode): Whether to rank for BUY, SELL or AFFECT.
+
+        Returns:
+            list[SampledNews]: Up to top_k articles ordered best-first for the mode.
+        """
         if len(articles) <= self.__top_k:
             return list(articles)
         if self.__is_tournament:
@@ -107,6 +136,7 @@ class LlmFilter(Filter):
         return self.__select_once(list(articles), mode)
 
     def __select_tournament(self, articles: list[SampledNews], mode: FilterMode) -> list[SampledNews]:
+        """Reduce a large batch to top_k by repeatedly picking the best of each group."""
         pool = articles
         while len(pool) > self.__group_size:
             survivors: list[SampledNews] = []
@@ -119,6 +149,7 @@ class LlmFilter(Filter):
         return pool
 
     def __select_once(self, articles: list[SampledNews], mode: FilterMode) -> list[SampledNews]:
+        """Select top_k articles from one group with a single model call."""
         if len(articles) <= self.__top_k:
             return list(articles)
         messages = self.__build_messages(articles, mode)
@@ -127,6 +158,7 @@ class LlmFilter(Filter):
         return self.__gather(articles, indices)
 
     def __build_messages(self, articles: list[SampledNews], mode: FilterMode) -> list[dict]:
+        """Build the system and user chat messages listing the headlines for the mode."""
         system = (
             "You are a financial analyst. You are given a numbered list of news "
             "headlines and must select the ones whose underlying stock is most "
@@ -135,22 +167,24 @@ class LlmFilter(Filter):
         )
         lines = []
         for index, article in enumerate(articles, start=1):
-            description = (article.news_description or "")[:_DESCRIPTION_CHARS]
+            description = (article.news_description or "")[:self.__DESCRIPTION_CHARS]
             lines.append(f"{index}. [{article.ticker}] {article.news_title} - {description}".strip())
         body = "\n".join(lines)
         user = (
-            f"Select the {self.__top_k} headlines whose stock is most likely to {_INSTRUCTIONS[mode]}.\n\n"
+            f"Select the {self.__top_k} headlines whose stock is most likely to {self.__INSTRUCTIONS[mode]}.\n\n"
             f"Headlines:\n{body}\n\n"
             f"Return a JSON array of exactly {self.__top_k} item numbers between 1 and {len(articles)}, best first."
         )
         return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
     def __complete(self, messages: list[dict]) -> str:
+        """Send the chat messages to the model and return its raw text reply."""
         client = self.__get_client()
         response = client.chat.completions.create(model=self.__model, messages=messages, temperature=0, seed=self.__seed)
         return response.choices[0].message.content or ""
 
     def __get_client(self):
+        """Return the API client, building it lazily from the environment on first use."""
         if self.__client is None:
             load_dotenv()
             api_key = os.getenv(self.__key_env)

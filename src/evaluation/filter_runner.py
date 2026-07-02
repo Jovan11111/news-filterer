@@ -20,6 +20,15 @@ class FilterRunner:
     """
 
     def __init__(self, dataset: Path, top_k: int, seed: int, subtract_market: bool = False, standardize: bool = False):
+        """Create the runner for one dataset and evaluation settings.
+
+        Args:
+            dataset (Path): Path to the dataset database to sample from.
+            top_k (int): Number of articles each filter selects.
+            seed (int): Seed for reproducible sampling.
+            subtract_market (bool): Whether to use market-adjusted (abnormal) returns.
+            standardize (bool): Whether to divide moves by 30-day volatility (z-scores).
+        """
         self.__dataset = dataset
         self.__top_k = top_k
         self.__seed = seed
@@ -28,10 +37,19 @@ class FilterRunner:
 
     @property
     def dataset(self) -> Path:
+        """The path to the dataset database being evaluated."""
         return self.__dataset
 
     def run(self, filter_factory: Callable[[], Filter], batch_sizes: Sequence[int]) -> list[FilterRun]:
-        """Evaluate the filter at every batch size and return the runs in order."""
+        """Evaluate the filter at every batch size and return the runs in order.
+
+        Args:
+            filter_factory (Callable[[], Filter]): Builds a fresh filter for each run.
+            batch_sizes (Sequence[int]): The batch sizes to sample and evaluate.
+
+        Returns:
+            list[FilterRun]: One run per batch size that produced a non-empty sample.
+        """
         evaluator = FilterEvaluator(self.__top_k, self.__subtract_market, self.__standardize)
         runs: list[FilterRun] = []
         for size in batch_sizes:
