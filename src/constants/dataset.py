@@ -33,6 +33,10 @@ FINNHUB_PAGE_CAP = 250
 # spaced out to stay safely under it.
 FINNHUB_REQUESTS_PER_MINUTE = 50
 
+# Minimum spacing (seconds) enforced between two Finnhub calls, derived from the
+# per-minute allowance above.
+FINNHUB_MIN_INTERVAL_SECONDS = 60.0 / max(1, FINNHUB_REQUESTS_PER_MINUTE)
+
 # --- Symbols and market benchmark ---------------------------------------------
 
 # Some companies file news under a legacy symbol on Finnhub. We query news with

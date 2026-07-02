@@ -1,8 +1,5 @@
 import json
-import os
 import re
-
-from dotenv import load_dotenv
 
 from src.constants.filtering import (
     LLM_DESCRIPTION_CHARS,
@@ -15,6 +12,7 @@ from src.constants.filtering import (
 )
 from src.filtering.filter import Filter
 from src.models.sampled_news import SampledNews
+from src.utils.config_provider import ConfigProvider
 from src.utils.enums.filter_mode import FilterMode
 from src.utils.logger import get_logger
 
@@ -182,8 +180,8 @@ class LlmFilter(Filter):
     def __get_client(self):
         """Return the API client, building it lazily from the environment on first use."""
         if self.__client is None:
-            load_dotenv()
-            api_key = os.getenv(self.__key_env)
+            config = ConfigProvider.get()
+            api_key = config.premium_ai_api_key if self.__is_premium else config.ai_api_key
             if not api_key:
                 raise ValueError(f"Missing required environment variable: {self.__key_env}")
             from openai import OpenAI

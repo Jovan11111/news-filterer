@@ -3,21 +3,13 @@ from threading import Lock
 
 from dotenv import load_dotenv
 
-from src.constants.dataset import (
-    DATASET_OUTPUT_DIR,
-    FINNHUB_API_KEY_ENV,
-    FINNHUB_CHUNK_DAYS,
-    FINNHUB_MAX_RETRIES,
-    FINNHUB_PAGE_CAP,
-    FINNHUB_RATE_LIMIT_DELAY_SECONDS,
-    FINNHUB_REQUESTS_PER_MINUTE,
-    FINNHUB_TIMEOUT_SECONDS,
-)
+from src.constants.dataset import FINNHUB_API_KEY_ENV
+from src.constants.filtering import LLM_PREMIUM_KEY_ENV, LLM_STANDARD_KEY_ENV
 from src.utils.app_config import AppConfig
 
 
 class ConfigProvider:
-    """Loads and caches the process-wide application configuration."""
+    """Loads and caches the secrets read from the environment."""
 
     _config: AppConfig | None = None
     _lock = Lock()
@@ -26,8 +18,10 @@ class ConfigProvider:
     def get(cls) -> AppConfig:
         """Return the process-wide configuration, loading it once on first use.
 
-        The only value read from the environment is the secret Finnhub API key;
-        every other setting is a constant defined in src/constants/dataset.py.
+        Only secrets are read here (from the environment); every non-secret
+        setting is a constant under src/constants/ and is imported directly
+        where it is used. Absent secrets are left as None and validated by the
+        component that needs them.
 
         Returns:
             AppConfig: The loaded application configuration.
@@ -37,21 +31,8 @@ class ConfigProvider:
                 if cls._config is None:
                     load_dotenv()
                     cls._config = AppConfig(
-                        dataset_output_dir=DATASET_OUTPUT_DIR,
-                        finnhub_api_key=cls.__require_env(FINNHUB_API_KEY_ENV),
-                        finnhub_rate_limit_delay=FINNHUB_RATE_LIMIT_DELAY_SECONDS,
-                        finnhub_timeout=FINNHUB_TIMEOUT_SECONDS,
-                        finnhub_max_retries=FINNHUB_MAX_RETRIES,
-                        finnhub_chunk_days=FINNHUB_CHUNK_DAYS,
-                        finnhub_page_cap=FINNHUB_PAGE_CAP,
-                        finnhub_min_interval=60.0 / max(1, FINNHUB_REQUESTS_PER_MINUTE),
+                        finnhub_api_key=os.getenv(FINNHUB_API_KEY_ENV),
+                        ai_api_key=os.getenv(LLM_STANDARD_KEY_ENV),
+                        premium_ai_api_key=os.getenv(LLM_PREMIUM_KEY_ENV),
                     )
         return cls._config
-
-    @staticmethod
-    def __require_env(name: str) -> str:
-        """Return the value of a required environment variable or raise if it is unset."""
-        value = os.getenv(name)
-        if not value:
-            raise ValueError(f"Missing required environment variable: {name}")
-        return value

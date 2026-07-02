@@ -1,17 +1,10 @@
 from dataclasses import dataclass
-from pathlib import Path
 
 
 @dataclass(frozen=True)
 class AppConfig:
-    # Dataset
-    dataset_output_dir: Path
-
-    # Finnhub news fetcher
-    finnhub_api_key: str
-    finnhub_rate_limit_delay: float
-    finnhub_timeout: float
-    finnhub_max_retries: int
-    finnhub_chunk_days: int
-    finnhub_page_cap: int
-    finnhub_min_interval: float
+    # Secrets read from the environment (absent ones are None and are validated
+    # by whichever component actually needs them).
+    finnhub_api_key: str | None
+    ai_api_key: str | None
+    premium_ai_api_key: str | None

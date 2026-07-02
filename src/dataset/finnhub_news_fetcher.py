@@ -3,7 +3,17 @@ from datetime import date, datetime, timedelta, timezone
 
 import requests
 
-from src.constants.dataset import FINNHUB_NEWS_URL, SYMBOL_ALIASES
+from src.constants.dataset import (
+    FINNHUB_API_KEY_ENV,
+    FINNHUB_CHUNK_DAYS,
+    FINNHUB_MAX_RETRIES,
+    FINNHUB_MIN_INTERVAL_SECONDS,
+    FINNHUB_NEWS_URL,
+    FINNHUB_PAGE_CAP,
+    FINNHUB_RATE_LIMIT_DELAY_SECONDS,
+    FINNHUB_TIMEOUT_SECONDS,
+    SYMBOL_ALIASES,
+)
 from src.models.news_item import NewsItem
 from src.utils.clean_text import clean_text
 from src.utils.config_provider import ConfigProvider
@@ -55,7 +65,9 @@ class FinnhubNewsFetcher:
             start (date): First date (inclusive) of news to fetch.
             end (date): Last date (inclusive) of news to fetch.
         """
-        self.__config = ConfigProvider.get()
+        self.__api_key = ConfigProvider.get().finnhub_api_key
+        if not self.__api_key:
+            raise ValueError(f"Missing required environment variable: {FINNHUB_API_KEY_ENV}")
         self.__start = start
         self.__end = end
         self.__last_request_ts = 0.0
@@ -64,8 +76,8 @@ class FinnhubNewsFetcher:
     def __throttle(self):
         """Block until at least min_interval has passed since the last call."""
         elapsed = time.monotonic() - self.__last_request_ts
-        if elapsed < self.__config.finnhub_min_interval:
-            time.sleep(self.__config.finnhub_min_interval - elapsed)
+        if elapsed < FINNHUB_MIN_INTERVAL_SECONDS:
+            time.sleep(FINNHUB_MIN_INTERVAL_SECONDS - elapsed)
         self.__last_request_ts = time.monotonic()
 
     def __request(self, ticker: str, start: date, end: date) -> list[dict]:
@@ -74,21 +86,21 @@ class FinnhubNewsFetcher:
             "symbol": SYMBOL_ALIASES.get(ticker, ticker),
             "from": start.isoformat(),
             "to": end.isoformat(),
-            "token": self.__config.finnhub_api_key,
+            "token": self.__api_key,
         }
-        for attempt in range(1, self.__config.finnhub_max_retries + 1):
+        for attempt in range(1, FINNHUB_MAX_RETRIES + 1):
             self.__throttle()
             try:
-                resp = self.__session.get(FINNHUB_NEWS_URL, params=params, timeout=self.__config.finnhub_timeout)
+                resp = self.__session.get(FINNHUB_NEWS_URL, params=params, timeout=FINNHUB_TIMEOUT_SECONDS)
             except requests.RequestException as e:
                 logger.warning(
                     f"Finnhub request error for {ticker} (try {attempt}): {e}"
                 )
-                time.sleep(self.__config.finnhub_rate_limit_delay * attempt)
+                time.sleep(FINNHUB_RATE_LIMIT_DELAY_SECONDS * attempt)
                 continue
 
             if resp.status_code == 429:  # too many requests, need to slow down
-                wait = self.__config.finnhub_rate_limit_delay * attempt * 2
+                wait = FINNHUB_RATE_LIMIT_DELAY_SECONDS * attempt * 2
                 logger.warning(f"Finnhub rate limit for {ticker}; sleeping {wait:.1f}s")
                 time.sleep(wait)
                 continue
@@ -98,7 +110,7 @@ class FinnhubNewsFetcher:
                 )
             if resp.status_code != 200:
                 logger.warning(f"Finnhub HTTP {resp.status_code} for {ticker}")
-                time.sleep(self.__config.finnhub_rate_limit_delay * attempt)
+                time.sleep(FINNHUB_RATE_LIMIT_DELAY_SECONDS * attempt)
                 continue
 
             data = resp.json()
@@ -140,7 +152,7 @@ class FinnhubNewsFetcher:
         raw: list[dict] = []
         window_start = self.__start
         while window_start <= self.__end:
-            window_end = min(window_start + timedelta(days=self.__config.finnhub_chunk_days - 1), self.__end)
+            window_end = min(window_start + timedelta(days=FINNHUB_CHUNK_DAYS - 1), self.__end)
             raw.extend(self.__fetch_window(ticker, window_start, window_end))
             window_start = window_end + timedelta(days=1)
         return raw
@@ -148,7 +160,7 @@ class FinnhubNewsFetcher:
     def __fetch_window(self, ticker: str, start: date, end: date) -> list[dict]:
         """Fetch one window, recursively splitting if it hits the result cap."""
         items = self.__request(ticker, start, end)
-        if len(items) >= self.__config.finnhub_page_cap and start < end:
+        if len(items) >= FINNHUB_PAGE_CAP and start < end:
             mid = start + timedelta(days=(end - start).days // 2)
             left = self.__fetch_window(ticker, start, mid)
             right = self.__fetch_window(ticker, mid + timedelta(days=1), end)

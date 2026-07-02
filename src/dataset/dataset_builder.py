@@ -1,11 +1,10 @@
 from datetime import date
 from pathlib import Path
 
-from src.constants.dataset import MARKET_INDEX_SYMBOL
+from src.constants.dataset import DATASET_OUTPUT_DIR, MARKET_INDEX_SYMBOL
 from src.dataset.finnhub_news_fetcher import FinnhubNewsFetcher
 from src.dataset.price_fetcher import PriceFetcher
 from src.models.news_record import NewsRecord
-from src.utils.config_provider import ConfigProvider
 from src.utils.news_database import NewsDatabase
 from src.utils.logger import get_logger
 
@@ -46,7 +45,7 @@ class DatasetBuilder:
     def db_path(self) -> Path:
         """Path of the DB that will be created, name of the db is: sp{N}_{start}_{end}."""
         name = f"sp{len(self.__tickers)}_{self.__start.isoformat()}_{self.__end.isoformat()}.db"
-        return ConfigProvider.get().dataset_output_dir.joinpath(name)
+        return DATASET_OUTPUT_DIR.joinpath(name)
 
     def build(self) -> Path:
         """Run the full pipeline and return the path of the written database.
