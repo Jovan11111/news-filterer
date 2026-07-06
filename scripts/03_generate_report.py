@@ -12,6 +12,7 @@ from src.filtering.finbert_filter import FinbertFilter
 from src.filtering.llm_filter import LlmFilter
 from src.filtering.random_filter import RandomFilter
 from src.filtering.rule_based_filter import RuleBasedFilter
+from src.filtering.trained_model_filter import TrainedModelFilter
 from src.filtering.vader_sentiment_filter import VaderSentimentFilter
 from src.utils.json_decoder import JsonDecoder
 from src.utils.logger import get_logger
@@ -25,6 +26,7 @@ FILTERS: dict[str, Callable[[int, int], Filter]] = {
     "vader": lambda top_k, seed: VaderSentimentFilter(top_k=top_k),
     "finbert": lambda top_k, seed: FinbertFilter(top_k=top_k),
     "finbert_cached": lambda top_k, seed: FinbertFilter(top_k=top_k, is_cached=True),
+    "trained_model": lambda top_k, seed: TrainedModelFilter(top_k=top_k),
     "llm": lambda top_k, seed: LlmFilter(top_k=top_k, seed=seed),
     "llm_tournament": lambda top_k, seed: LlmFilter(top_k=top_k, seed=seed, is_tournament=True),
     "llm_premium": lambda top_k, seed: LlmFilter(top_k=top_k, seed=seed, is_premium=True),

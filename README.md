@@ -18,12 +18,24 @@ python scripts/02_filter_news.py
 python scripts/03_generate_report.py
 ```
 
+The `trained_model` filter is a small neural network trained on the dataset
+itself, so it must be trained once before it can be selected in the report:
+
+```bash
+# train the news-impact model (writes trained_models/news_impact_mlp.joblib)
+python scripts/04_train_model.py
+```
+
+To avoid data leakage, `04_train_model.py` reserves the same dataset the report
+evaluates on (the largest) and trains only on the rest, reporting time-split
+validation metrics before saving the final model.
+
 `config/experiment_config.json` drives scripts `02` and `03`. Key fields under
 `experiment`:
 
 - `filter`: which filter the report runs. One of `random`, `rule_based`,
-  `vader`, `finbert`, `finbert_cached`, `llm`, `llm_tournament`, `llm_premium`,
-  `llm_premium_tournament`.
+  `vader`, `finbert`, `finbert_cached`, `trained_model`, `llm`, `llm_tournament`,
+  `llm_premium`, `llm_premium_tournament`.
 - `batching.top_k`: how many articles each filter selects.
 - `batching.batch_size` / `batching.random_seed`: sampling controls.
 - `evaluation.scalability_sizes`: batch sizes the report sweeps.
