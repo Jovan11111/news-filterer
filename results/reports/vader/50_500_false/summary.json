@@ -1,0 +1,163 @@
+{
+  "variant": "50_500_false",
+  "top_k": 50,
+  "batch_size": 500,
+  "tournament": false,
+  "group_size": null,
+  "model": "vader",
+  "subtract_market": false,
+  "standardize": false,
+  "pricing": {
+    "input_per_1m": 0.0,
+    "output_per_1m": 0.0
+  },
+  "totals": {
+    "runs_completed": 10,
+    "runs_failed": 0,
+    "prompt_tokens": 0,
+    "completion_tokens": 0,
+    "total_tokens": 0,
+    "api_calls": 0,
+    "estimated_cost_usd": 0.0,
+    "filter_seconds": 5.171,
+    "wall_seconds": 6.102,
+    "mean_wall_seconds": 0.61,
+    "mean_filter_seconds": 0.517
+  },
+  "overall_mean_normalized_score": -0.005615708033497092,
+  "per_cell": {
+    "buy|1_day": {
+      "normalized_score": {
+        "mean": 0.009011277671964947,
+        "std": 0.1058275600336743,
+        "n": 10
+      },
+      "lift_over_average": {
+        "mean": 0.03710166,
+        "std": 0.36599373162214494,
+        "n": 10
+      },
+      "filter_value": {
+        "mean": 0.1955574,
+        "std": 0.38893191858850223,
+        "n": 10
+      },
+      "gap_to_ideal": {
+        "mean": 3.4297671999999997,
+        "std": 0.4374594280628396,
+        "n": 10
+      }
+    },
+    "buy|7_days": {
+      "normalized_score": {
+        "mean": -0.015793979045733927,
+        "std": 0.0990458295841247,
+        "n": 10
+      },
+      "lift_over_average": {
+        "mean": -0.13522641999999996,
+        "std": 0.7809452521812579,
+        "n": 10
+      },
+      "filter_value": {
+        "mean": 0.4151724,
+        "std": 0.8170450766462167,
+        "n": 10
+      },
+      "gap_to_ideal": {
+        "mean": 8.305315199999999,
+        "std": 0.9961468220026378,
+        "n": 10
+      }
+    },
+    "sell|1_day": {
+      "normalized_score": {
+        "mean": -0.052177658967964294,
+        "std": 0.12276652583963867,
+        "n": 10
+      },
+      "lift_over_average": {
+        "mean": -0.15891525999999997,
+        "std": 0.37873574088162837,
+        "n": 10
+      },
+      "filter_value": {
+        "mean": -0.31737099999999996,
+        "std": 0.3861898098882925,
+        "n": 10
+      },
+      "gap_to_ideal": {
+        "mean": 3.2649802,
+        "std": 0.41780747294040155,
+        "n": 10
+      }
+    },
+    "sell|7_days": {
+      "normalized_score": {
+        "mean": -0.03920273152023295,
+        "std": 0.06853407826091006,
+        "n": 10
+      },
+      "lift_over_average": {
+        "mean": -0.27276838,
+        "std": 0.480032112217084,
+        "n": 10
+      },
+      "filter_value": {
+        "mean": -0.8231672,
+        "std": 0.5258807958448378,
+        "n": 10
+      },
+      "gap_to_ideal": {
+        "mean": 7.3401618,
+        "std": 0.5267927636231666,
+        "n": 10
+      }
+    },
+    "affect|1_day": {
+      "normalized_score": {
+        "mean": 0.022609257286210722,
+        "std": 0.05757727966178879,
+        "n": 10
+      },
+      "lift_over_average": {
+        "mean": 0.07272726000000003,
+        "std": 0.17589326216443005,
+        "n": 10
+      },
+      "filter_value": {
+        "mean": 1.3361084,
+        "std": 0.18587828761327788,
+        "n": 10
+      },
+      "gap_to_ideal": {
+        "mean": 3.024154,
+        "std": 0.2846074742861747,
+        "n": 10
+      }
+    },
+    "affect|7_days": {
+      "normalized_score": {
+        "mean": 0.041859586374772946,
+        "std": 0.066947706453919,
+        "n": 10
+      },
+      "lift_over_average": {
+        "mean": 0.2931443400000001,
+        "std": 0.4693218323109399,
+        "n": 10
+      },
+      "filter_value": {
+        "mean": 3.3156298,
+        "std": 0.4587598469220638,
+        "n": 10
+      },
+      "gap_to_ideal": {
+        "mean": 6.620249599999999,
+        "std": 0.5464489277368114,
+        "n": 10
+      }
+    }
+  },
+  "timestamp": "2026-07-10T13:45:11.823390+00:00"
+}
