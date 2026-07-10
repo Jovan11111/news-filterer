@@ -2,6 +2,7 @@ import json
 import re
 
 from src.constants.filtering import (
+    LLM_AZURE_SCOPE,
     LLM_DESCRIPTION_CHARS,
     LLM_MODE_INSTRUCTIONS,
     LLM_PREMIUM_KEY_ENV,
@@ -72,9 +73,32 @@ class LlmFilter(Filter):
         self.__is_tournament = is_tournament
         self.__group_size = group_size
         self.__seed = seed
-        self.__model = model or (LLM_PREMIUM_MODEL if is_premium else LLM_STANDARD_MODEL)
+        self.__model = model or self.__default_model(is_premium)
         self.__key_env = LLM_PREMIUM_KEY_ENV if is_premium else LLM_STANDARD_KEY_ENV
         self.__client = client
+        self.__credential = None
+        self.__use_responses = self.__default_use_responses(is_premium)
+        self.__prompt_tokens = 0
+        self.__completion_tokens = 0
+        self.__api_calls = 0
+
+    @staticmethod
+    def __default_model(is_premium: bool) -> str:
+        """Resolve the model name, letting an env override (e.g. a Foundry deployment) win.
+
+        Reads only non-secret settings from the environment, so it never requires
+        an API key; the built-in OpenAI model names are used when nothing is set.
+        """
+        config = ConfigProvider.get()
+        if is_premium:
+            return config.premium_ai_model or LLM_PREMIUM_MODEL
+        return config.ai_model or LLM_STANDARD_MODEL
+
+    @staticmethod
+    def __default_use_responses(is_premium: bool) -> bool:
+        """Whether this deployment uses the Responses API instead of Chat Completions."""
+        config = ConfigProvider.get()
+        return config.premium_ai_use_responses if is_premium else config.ai_use_responses
 
     @property
     def name(self) -> str:
@@ -110,6 +134,26 @@ class LlmFilter(Filter):
     def model(self) -> str:
         """The name of the model used for completions."""
         return self.__model
+
+    @property
+    def prompt_tokens(self) -> int:
+        """Total input (prompt) tokens billed across all model calls so far."""
+        return self.__prompt_tokens
+
+    @property
+    def completion_tokens(self) -> int:
+        """Total output (completion) tokens billed across all model calls so far."""
+        return self.__completion_tokens
+
+    @property
+    def total_tokens(self) -> int:
+        """Total tokens (prompt + completion) billed across all model calls so far."""
+        return self.__prompt_tokens + self.__completion_tokens
+
+    @property
+    def api_calls(self) -> int:
+        """Number of model calls made across all selections so far."""
+        return self.__api_calls
 
     def select(
         self, articles: list[SampledNews], mode: FilterMode
@@ -174,20 +218,75 @@ class LlmFilter(Filter):
     def __complete(self, messages: list[dict]) -> str:
         """Send the chat messages to the model and return its raw text reply."""
         client = self.__get_client()
+        if self.__credential is not None:
+            # Refresh the Entra token before each call; the credential caches it
+            # and only fetches a new one when the current one is near expiry, so
+            # long batch runs never fail on an expired token.
+            client.api_key = self.__credential.get_token(LLM_AZURE_SCOPE).token
+        self.__api_calls += 1
+        if self.__use_responses:
+            # Responses-API-only deployments (e.g. reasoning/"pro" models) take
+            # the same role/content items as `input` and expose the reply text
+            # directly; temperature/seed are omitted as such models reject them.
+            response = client.responses.create(model=self.__model, input=messages)
+            self.__record_usage(response)
+            return response.output_text or ""
         response = client.chat.completions.create(model=self.__model, messages=messages, temperature=LLM_TEMPERATURE, seed=self.__seed)
+        self.__record_usage(response)
         return response.choices[0].message.content or ""
 
+    def __record_usage(self, response) -> None:
+        """Accumulate token usage from a model response, tolerating absent usage."""
+        usage = getattr(response, "usage", None)
+        if usage is None:
+            return
+        prompt = getattr(usage, "prompt_tokens", None)
+        if prompt is None:
+            prompt = getattr(usage, "input_tokens", 0)
+        completion = getattr(usage, "completion_tokens", None)
+        if completion is None:
+            completion = getattr(usage, "output_tokens", 0)
+        self.__prompt_tokens += int(prompt or 0)
+        self.__completion_tokens += int(completion or 0)
+
     def __get_client(self):
-        """Return the API client, building it lazily from the environment on first use."""
+        """Return the API client, building it lazily from the environment on first use.
+
+        When a base URL is configured (e.g. an Azure AI Foundry endpoint) the
+        client authenticates with Entra ID via DefaultAzureCredential — no API
+        key needed, so an `az login` session is enough. Otherwise it falls back
+        to key-based auth against the default OpenAI endpoint.
+        """
         if self.__client is None:
             config = ConfigProvider.get()
-            api_key = config.premium_ai_api_key if self.__is_premium else config.ai_api_key
-            if not api_key:
-                raise ValueError(f"Missing required environment variable: {self.__key_env}")
-            from openai import OpenAI
+            base_url = config.premium_ai_base_url if self.__is_premium else config.ai_base_url
+            if base_url:
+                self.__client = self.__build_azure_client(base_url, config)
+            else:
+                api_key = config.premium_ai_api_key if self.__is_premium else config.ai_api_key
+                if not api_key:
+                    raise ValueError(f"Missing required environment variable: {self.__key_env}")
+                from openai import OpenAI
 
-            self.__client = OpenAI(api_key=api_key)
+                self.__client = OpenAI(api_key=api_key)
         return self.__client
+
+    def __build_azure_client(self, base_url: str, config):
+        """Build a keyless OpenAI client for an Azure AI Foundry endpoint (Entra ID)."""
+        from azure.identity import DefaultAzureCredential
+        from openai import OpenAI
+
+        self.__credential = DefaultAzureCredential()
+        options: dict = {
+            "api_key": self.__credential.get_token(LLM_AZURE_SCOPE).token,
+            "base_url": base_url,
+        }
+        # Only classic model-inference endpoints need api-version; the newer
+        # `/openai/v1/` endpoint is versionless and rejects the query param, so
+        # send it only when it is explicitly configured.
+        if config.ai_api_version:
+            options["default_query"] = {"api-version": config.ai_api_version}
+        return OpenAI(**options)
 
     @staticmethod
     def __parse_indices(content: str) -> list[int]:

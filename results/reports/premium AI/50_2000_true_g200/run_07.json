@@ -1,0 +1,100 @@
+{
+  "variant": "50_2000_true_g200",
+  "top_k": 50,
+  "batch_size": 2000,
+  "tournament": true,
+  "group_size": 200,
+  "model": "gpt-5.4",
+  "subtract_market": false,
+  "standardize": false,
+  "seed": 1007,
+  "run_index": 7,
+  "timestamp": "2026-07-08T13:19:24.873067+00:00",
+  "pricing": {
+    "input_per_1m": 2.5,
+    "output_per_1m": 10.0
+  },
+  "status": "ok",
+  "actual_batch_size": 2000,
+  "api_calls": 42,
+  "prompt_tokens": 517356,
+  "completion_tokens": 4410,
+  "total_tokens": 521766,
+  "estimated_cost_usd": 1.33749,
+  "filter_elapsed_seconds": 234.17984020034783,
+  "wall_seconds": 234.31427400000393,
+  "scores": [
+    {
+      "mode": "buy",
+      "horizon": "1_day",
+      "top_k": 50,
+      "filter_value": 0.145928,
+      "ideal_value": 6.21516,
+      "average_value": 0.151532,
+      "worst_value": -4.350224,
+      "gap_to_ideal": 6.069232,
+      "lift_over_average": -0.005603999999999998,
+      "normalized_score": -0.0009241991758069588
+    },
+    {
+      "mode": "buy",
+      "horizon": "7_days",
+      "top_k": 50,
+      "filter_value": 1.199344,
+      "ideal_value": 12.752596,
+      "average_value": 0.4960665,
+      "worst_value": -9.99286,
+      "gap_to_ideal": 11.553252,
+      "lift_over_average": 0.7032775,
+      "normalized_score": 0.057379823546298316
+    },
+    {
+      "mode": "sell",
+      "horizon": "1_day",
+      "top_k": 50,
+      "filter_value": 0.056296000000000006,
+      "ideal_value": 4.350224,
+      "average_value": -0.151532,
+      "worst_value": -6.21516,
+      "gap_to_ideal": 4.293928,
+      "lift_over_average": 0.207828,
+      "normalized_score": 0.046165985006739595
+    },
+    {
+      "mode": "sell",
+      "horizon": "7_days",
+      "top_k": 50,
+      "filter_value": 0.07038400000000003,
+      "ideal_value": 9.99286,
+      "average_value": -0.4960665,
+      "worst_value": -12.752596,
+      "gap_to_ideal": 9.922476,
+      "lift_over_average": 0.5664505000000001,
+      "normalized_score": 0.054004620968599606
+    },
+    {
+      "mode": "affect",
+      "horizon": "1_day",
+      "top_k": 50,
+      "filter_value": 1.463564,
+      "ideal_value": 6.709394,
+      "average_value": 1.2202277,
+      "worst_value": 0.015234000000000001,
+      "gap_to_ideal": 5.24583,
+      "lift_over_average": 0.24333630000000017,
+      "normalized_score": 0.044330283817416896
+    },
+    {
+      "mode": "affect",
+      "horizon": "7_days",
+      "top_k": 50,
+      "filter_value": 3.6904079999999997,
+      "ideal_value": 13.812498,
+      "average_value": 2.8973712999999996,
+      "worst_value": 0.039752,
+      "gap_to_ideal": 10.12209,
+      "lift_over_average": 0.7930367,
+      "normalized_score": 0.07265483230716874
+    }
+  ]
+}

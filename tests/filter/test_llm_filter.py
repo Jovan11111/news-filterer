@@ -5,6 +5,8 @@ import pytest
 
 from src.filtering.llm_filter import LlmFilter
 from src.models.sampled_news import SampledNews
+from src.utils.app_config import AppConfig
+from src.utils.config_provider import ConfigProvider
 from src.utils.enums.filter_mode import FilterMode
 
 
@@ -52,9 +54,32 @@ def test_name_combinations():
     assert LlmFilter(is_premium=True, is_tournament=True).name == "llm_premium_tournament"
 
 
-def test_premium_selects_stronger_model():
+def test_premium_selects_stronger_model(monkeypatch):
+    # Isolate from any real .env so the built-in default models are exercised.
+    monkeypatch.setattr(
+        ConfigProvider,
+        "_config",
+        AppConfig(finnhub_api_key=None, ai_api_key=None, premium_ai_api_key=None),
+    )
     assert LlmFilter().model == "gpt-4o-mini"
     assert LlmFilter(is_premium=True).model == "gpt-4o"
+
+
+def test_model_override_from_config(monkeypatch):
+    # An env override (e.g. a Foundry deployment name) wins over the defaults.
+    monkeypatch.setattr(
+        ConfigProvider,
+        "_config",
+        AppConfig(
+            finnhub_api_key=None,
+            ai_api_key=None,
+            premium_ai_api_key=None,
+            ai_model="std-deployment",
+            premium_ai_model="foundry-deployment",
+        ),
+    )
+    assert LlmFilter().model == "std-deployment"
+    assert LlmFilter(is_premium=True).model == "foundry-deployment"
 
 
 def test_tournament_requires_group_larger_than_top_k():

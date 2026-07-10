@@ -14,6 +14,32 @@ LLM_STANDARD_KEY_ENV = "AI_API_KEY"
 LLM_PREMIUM_MODEL = "gpt-4o"
 LLM_PREMIUM_KEY_ENV = "PREMIUM_AI_API_KEY"
 
+# Optional OpenAI-compatible base URLs. When set they redirect the standard or
+# premium client to a custom endpoint (e.g. an Azure AI Foundry "models"
+# endpoint), while an empty/absent value keeps the default OpenAI endpoint.
+LLM_STANDARD_BASE_URL_ENV = "AI_BASE_URL"
+LLM_PREMIUM_BASE_URL_ENV = "PREMIUM_AI_BASE_URL"
+
+# Optional model/deployment name overrides. On Foundry the "model" is the
+# deployment name you chose (e.g. a Claude deployment), which need not match the
+# default OpenAI model names above.
+LLM_STANDARD_MODEL_ENV = "AI_MODEL"
+LLM_PREMIUM_MODEL_ENV = "PREMIUM_AI_MODEL"
+
+# Optional API version sent as the `api-version` query parameter, required by
+# classic Azure model-inference endpoints and left off for the versionless
+# `/openai/v1/` endpoint, which rejects it.
+LLM_API_VERSION_ENV = "AI_API_VERSION"
+
+# Optional flags selecting the Responses API instead of Chat Completions. Some
+# newer deployments (e.g. reasoning/"pro" models) only speak the Responses API.
+LLM_STANDARD_USE_RESPONSES_ENV = "AI_USE_RESPONSES"
+LLM_PREMIUM_USE_RESPONSES_ENV = "PREMIUM_AI_USE_RESPONSES"
+
+# Entra ID token scope used for keyless auth against Azure AI Foundry / Azure
+# OpenAI endpoints (via DefaultAzureCredential, e.g. an `az login` session).
+LLM_AZURE_SCOPE = "https://cognitiveservices.azure.com/.default"
+
 # Number of description characters included per headline in the prompt.
 LLM_DESCRIPTION_CHARS = 200
 

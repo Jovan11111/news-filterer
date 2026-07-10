@@ -10,3 +10,25 @@ AI_API_KEY=""
 
 # OpenAI-compatible API key for the premium LLM filter (gpt-4o).
 PREMIUM_AI_API_KEY=""
+
+# --- Optional: route the PREMIUM filter to Azure AI Foundry instead of OpenAI ---
+# Fill these in to use a Foundry deployment (e.g. gpt-5.4-pro) for the premium
+# filter. Leave them empty to keep the default OpenAI gpt-4o.
+#
+# Auth is KEYLESS via Entra ID: when PREMIUM_AI_BASE_URL is set the client uses
+# DefaultAzureCredential, so PREMIUM_AI_API_KEY above is ignored — just make sure
+# you are signed in (e.g. `az login`) and have access to the Foundry resource.
+#
+# 1) The project's models endpoint, WITHOUT a trailing slash. In the Foundry
+#    portal: your project -> Overview / Endpoints. It ends in ".../models".
+#    Example: https://my-foundry-resource.services.ai.azure.com/models
+PREMIUM_AI_BASE_URL=""
+# 2) The deployment name you gave the model in Foundry (NOT the catalog name).
+#    Example: gpt-5.4-pro
+PREMIUM_AI_MODEL=""
+# 3) Optional API version for the endpoint. If omitted a sensible default is
+#    used; set it only if a deployment needs a specific version.
+AI_API_VERSION=""
+# 4) Set to "true" if the deployment only supports the Responses API instead of
+#    Chat Completions (typical for reasoning/"pro" models, e.g. gpt-5.4-pro).
+PREMIUM_AI_USE_RESPONSES=""

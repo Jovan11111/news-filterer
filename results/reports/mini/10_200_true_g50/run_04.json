@@ -1,0 +1,100 @@
+{
+  "variant": "10_200_true_g50",
+  "top_k": 10,
+  "batch_size": 200,
+  "tournament": true,
+  "group_size": 50,
+  "model": "gpt-5.4-mini",
+  "subtract_market": false,
+  "standardize": false,
+  "seed": 1004,
+  "run_index": 4,
+  "timestamp": "2026-07-07T14:07:21.564510+00:00",
+  "pricing": {
+    "input_per_1m": 2.5,
+    "output_per_1m": 10.0
+  },
+  "status": "ok",
+  "actual_batch_size": 200,
+  "api_calls": 15,
+  "prompt_tokens": 48426,
+  "completion_tokens": 504,
+  "total_tokens": 48930,
+  "estimated_cost_usd": 0.126105,
+  "filter_elapsed_seconds": 46.66578250029124,
+  "wall_seconds": 46.72111160005443,
+  "scores": [
+    {
+      "mode": "buy",
+      "horizon": "1_day",
+      "top_k": 10,
+      "filter_value": 0.45024,
+      "ideal_value": 5.11397,
+      "average_value": 0.055786999999999996,
+      "worst_value": -4.740399999999999,
+      "gap_to_ideal": 4.66373,
+      "lift_over_average": 0.394453,
+      "normalized_score": 0.07798314137705178
+    },
+    {
+      "mode": "buy",
+      "horizon": "7_days",
+      "top_k": 10,
+      "filter_value": 0.33415000000000006,
+      "ideal_value": 11.27056,
+      "average_value": 0.1325875,
+      "worst_value": -8.95883,
+      "gap_to_ideal": 10.93641,
+      "lift_over_average": 0.20156250000000006,
+      "normalized_score": 0.01809687535141607
+    },
+    {
+      "mode": "sell",
+      "horizon": "1_day",
+      "top_k": 10,
+      "filter_value": 0.76273,
+      "ideal_value": 4.740399999999999,
+      "average_value": -0.055786999999999996,
+      "worst_value": -5.11397,
+      "gap_to_ideal": 3.9776699999999994,
+      "lift_over_average": 0.818517,
+      "normalized_score": 0.1706599429922145
+    },
+    {
+      "mode": "sell",
+      "horizon": "7_days",
+      "top_k": 10,
+      "filter_value": 0.38742999999999983,
+      "ideal_value": 8.95883,
+      "average_value": -0.1325875,
+      "worst_value": -11.27056,
+      "gap_to_ideal": 8.5714,
+      "lift_over_average": 0.5200174999999998,
+      "normalized_score": 0.05719872616123941
+    },
+    {
+      "mode": "affect",
+      "horizon": "1_day",
+      "top_k": 10,
+      "filter_value": 1.55056,
+      "ideal_value": 6.475319999999999,
+      "average_value": 1.273017,
+      "worst_value": 0.01109,
+      "gap_to_ideal": 4.924759999999999,
+      "lift_over_average": 0.2775429999999999,
+      "normalized_score": 0.05335002594043445
+    },
+    {
+      "mode": "affect",
+      "horizon": "7_days",
+      "top_k": 10,
+      "filter_value": 4.71793,
+      "ideal_value": 12.60678,
+      "average_value": 2.9569585000000003,
+      "worst_value": 0.07252,
+      "gap_to_ideal": 7.888850000000001,
+      "lift_over_average": 1.7609714999999997,
+      "normalized_score": 0.1824874688096562
+    }
+  ]
+}

@@ -8,7 +8,7 @@
       "end_date": "2026-03-31",
       "significance_threshold": 2.0
     },
-    "filter": "random",
+    "filter": "llm_premium_tournament",
     "batching": {
       "batch_size": 50,
       "top_k": 10,
@@ -17,7 +17,7 @@
     "evaluation": {
       "num_consistency_runs": 10,
       "consistency_batches": 5,
-      "scalability_sizes": [50, 100, 200, 500, 1000, 5000],
+      "scalability_sizes": [50, 100, 200, 500],
       "subtract_market": false,
       "standardize": false
     },
